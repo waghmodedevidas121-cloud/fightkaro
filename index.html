@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SANSAD SHOWDOWN // The Great Kursi Fight</title>
+<link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+
+    <!-- 1. BILINGUAL SATIRE NOTICE (Exact fightkaro.com flow) -->
+    <div id="disclaimer-screen" class="modal-screen">
+        <div class="satire-box">
+            <h2>⚠️ SATIRE NOTICE / व्यंग्य सूचना</h2>
+            <p><b>SANSAD SHOWDOWN (The Great Kursi Fight)</b> is a fictional 3D political satire and parody game created purely for entertainment and humour under creative freedom.</p>
+            <p>किसी किरदार का नाम, संवाद या विशेष हमला (Special Power) किसी वास्तविक व्यक्ति या नेता का आधिकारिक बयान नहीं है। कृपया इसे केवल मनोरंजन के रूप में लें!</p>
+            <button class="btn-gold" id="accept-disclaimer">I UNDERSTAND — CONTINUE</button>
+        </div>
+    </div>
+
+    <!-- 2. CHARACTER & STAGE SELECT SCREEN -->
+    <div id="select-screen" class="modal-screen">
+        <div class="game-title">SANSAD SHOWDOWN</div>
+        <div class="game-subtitle">THE GREAT KURSI FIGHT // FIGHTKARO.COM</div>
+
+        <div style="font-size: 13px; color: #ccc; font-family: sans-serif;">
+            CLICK TO PICK <b style="color:var(--shakti)">YOUR NETA (P1)</b> &nbsp;|&nbsp; RIGHT-CLICK OR TAP TARGET BUTTON FOR <b style="color:var(--red)">OPPONENT (CPU)</b>
+        </div>
+
+        <div class="roster-grid" id="roster-grid"></div>
+
+        <div class="stage-row">
+            <span style="font-size:12px; color:#aaa;">STAGE:</span>
+            <button class="stage-btn active" data-stage="SANSAD">🏛️ SANSAD BHAVAN</button>
+            <button class="stage-btn" data-stage="JANTAR">📢 JANTAR MANTAR</button>
+            <button class="stage-btn" data-stage="SADAK">🛣️ DESI SADAK</button>
+            <button class="stage-btn" id="toggle-pick-side" style="border-color:var(--shakti)">PICKING: P1</button>
+        </div>
+
+        <button class="btn-gold" id="start-fight-btn" style="margin-top: 6px;">FIGHT FOR THE KURSI!</button>
+    </div>
+
+    <!-- 3. IN-GAME HUD -->
+    <div id="hud">
+        <div class="top-bar">
+            <div class="fighter-hud p1">
+                <div class="hud-header">
+                    <div>
+                        <div class="name-tag" id="p1-name">MITRAMAN</div>
+                        <span class="team-tag" id="p1-team">Team Vaada</span>
+                    </div>
+                    <div class="round-dots">
+                        <div class="dot" id="p1-r1"></div>
+                        <div class="dot" id="p1-r2"></div>
+                    </div>
+                </div>
+                <div class="hp-container">
+                    <div id="p1-hp-dmg" class="hp-damage" style="width: 100%;"></div>
+                    <div id="p1-hp" class="hp-fill" style="width: 100%;"></div>
+                </div>
+                <div class="shakti-wrap">
+                    <span class="shakti-label" id="p1-shakti-txt">SHAKTI 0%</span>
+                    <div class="shakti-container">
+                        <div id="p1-shakti" class="shakti-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timer-box">
+                <span>KURSI</span>
+                <div id="match-timer">60</div>
+            </div>
+
+            <div class="fighter-hud p2">
+                <div class="hud-header">
+                    <div>
+                        <div class="name-tag" id="p2-name">YATRA BOY</div>
+                        <span class="team-tag" id="p2-team">Team Yatra</span>
+                    </div>
+                    <div class="round-dots">
+                        <div class="dot" id="p2-r1"></div>
+                        <div class="dot" id="p2-r2"></div>
+                    </div>
+                </div>
+                <div class="hp-container">
+                    <div id="p2-hp-dmg" class="hp-damage" style="width: 100%;"></div>
+                    <div id="p2-hp" class="hp-fill" style="width: 100%;"></div>
+                </div>
+                <div class="shakti-wrap">
+                    <span class="shakti-label" id="p2-shakti-txt">SHAKTI 0%</span>
+                    <div class="shakti-container">
+                        <div id="p2-shakti" class="shakti-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MBAPU SHANTI / PEACE METER -->
+        <div id="shanti-box">
+            <div class="title">🕊️ SHANTI ROUTE: STAY CLOSE, DO NOT ATTACK & BLOCK 5 HITS (<span id="shanti-blocks">0/5</span>)</div>
+            <div class="shanti-bar-bg"><div id="shanti-fill"></div></div>
+        </div>
+
+        <div id="p1-callout" class="move-callout">DEMONETIZATION PALM!</div>
+        <div id="p2-callout" class="move-callout">ROADSHOW UPPERCUT!</div>
+        <div id="center-announcer">ROUND 1</div>
+
+        <div class="bottom-ui">
+            <div class="controls-hint">
+                MOVE: <b>A/D / ←/→</b> | JUMP: <b>W / ↑ / E / Space</b> | CROUCH: <b>S / ↓</b> | BLOCK: <b>Hold Back</b><br>
+                PUNCH: <b>J / Z / F</b> | KICK: <b>K / X / H</b> | GRAB: <b>I / C / G</b> | <span style="color:var(--shakti);font-weight:900;">SHAKTI SUPER (100%):</span> <b>L / SPACE / V / U</b>
+            </div>
+
+            <div id="touch-controls">
+                <div class="touch-group">
+                    <div class="touch-btn" data-key="KeyA">◀</div>
+                    <div class="touch-btn" data-key="KeyS">▼</div>
+                    <div class="touch-btn" data-key="KeyW">▲</div>
+                    <div class="touch-btn" data-key="KeyD">▶</div>
+                </div>
+                <div class="touch-group">
+                    <div class="touch-btn" data-key="KeyJ">PUNCH</div>
+                    <div class="touch-btn" data-key="KeyK">KICK</div>
+                    <div class="touch-btn" data-key="KeyI">GRAB</div>
+                    <div class="touch-btn super-btn" data-key="KeyL">SHAKTI!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BREAKING NEWS TICKER -->
+    <div id="news-ticker">
+        <div class="ticker-badge">BREAKING NEWS</div>
+        <div class="ticker-wrap">
+            <div id="ticker-text">
+                🔥 SANSAD SHOWDOWN LIVE: KURSI KE LIYE MAHA-YUDH SHURU! &nbsp;&bull;&nbsp; MITRAMAN KA MITRA CHAKRA TAYYAR! &nbsp;&bull;&nbsp; YATRA BOY NE LAGAYA ALOO SE SONA MACHINE! &nbsp;&bull;&nbsp; DEEDEE BOLE: KHELA HOBE, JADU HOBE! &nbsp;&bull;&nbsp; TARIFF TAAU NE SAB PE 200% TARIFF THOKA! &nbsp;&bull;&nbsp; DOZER DADA KA BULLDOZER ARENA MEIN GHUSA!
+            </div>
+        </div>
+    </div>
+
+<script src="js/vendor/three.min.js"></script>
+<script src="js/vendor/GLTFLoader.js"></script>
+<script src="js/vendor/DRACOLoader.js"></script>
+<script src="js/data.js"></script>
+<script src="js/clips.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/vfx.js"></script>
+<script src="js/props.js"></script>
+<script src="js/rig.js"></script>
+<script src="js/fighter.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

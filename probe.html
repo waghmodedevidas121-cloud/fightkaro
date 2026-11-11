@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>model probe</title>
+<style>body{margin:0;background:#101820;overflow:hidden}canvas{display:block}</style>
+</head><body>
+<script src="js/vendor/three.min.js"></script>
+<script src="js/vendor/GLTFLoader.js"></script>
+<script src="js/vendor/DRACOLoader.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x101820);
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(0, 1.2, 4.2);
+camera.lookAt(0, 0.95, 0);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputEncoding = THREE.LinearEncoding;
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0x8fb8ff, 0x33131a, 0.6));
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const d = new THREE.DirectionalLight(0xfff4e2, 1.1); d.position.set(3, 6, 5); scene.add(d);
+const grid = new THREE.GridHelper(6, 12, 0x335577, 0x223344); scene.add(grid);
+
+const draco = new THREE.DRACOLoader();
+draco.setDecoderPath('js/vendor/draco/');
+const loader = new THREE.GLTFLoader();
+loader.setDRACOLoader(draco);
+
+window.PROBE = { log: [] };
+function load(name) {
+  return new Promise((res, rej) => loader.load('models/' + name + '.glb', (g) => {
+    const o = g.scene;
+    const box = new THREE.Box3().setFromObject(o);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const info = {
+      name,
+      size: size.toArray().map(v => +v.toFixed(3)),
+      min: box.min.toArray().map(v => +v.toFixed(3)),
+      max: box.max.toArray().map(v => +v.toFixed(3)),
+      anims: g.animations.map(a => a.name + ':' + a.duration.toFixed(2))
+    };
+    window.PROBE.log.push(info);
+    res({ g, info, box, size, center });
+  }, undefined, (e) => { window.PROBE.log.push({ name, error: String(e && e.message || e) }); rej(e); }));
+}
+
+let mixer = null, root = null, actions = {};
+window.show = async function (name, clip) {
+  if (root) scene.remove(root);
+  if (mixer) { mixer.stopAllAction(); mixer = null; }
+  const { g, box, size } = await load(name);
+  root = g.scene;
+  // normalize: feet at y=0, height ~1.8
+  const s = 1.8 / size.y;
+  root.scale.setScalar(s);
+  root.position.y = -box.min.y * s;
+  root.position.x = 0; root.position.z = 0;
+  scene.add(root);
+  mixer = new THREE.AnimationMixer(root);
+  actions = {};
+  for (const a of g.animations) actions[a.name] = mixer.clipAction(a);
+  if (clip && actions[clip]) { actions[clip].reset().play(); }
+  return { name, scale: +s.toFixed(4), clips: Object.keys(actions) };
+};
+window.tick = function (t) { if (mixer) mixer.update(t); renderer.render(scene, camera); return 'ok'; };
+function loop(now) { renderer.render(scene, camera); requestAnimationFrame(loop); }
+loop(0);
+</script>
+</body></html>

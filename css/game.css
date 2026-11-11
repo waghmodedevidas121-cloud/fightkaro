@@ -1,0 +1,238 @@
+:root {
+            --saffron: #ff7700;
+            --gold: #ffcc00;
+            --shakti: #00f0ff;
+            --red: #ff2244;
+            --green: #00e676;
+            --dark: #0a0b10;
+        }
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
+        body, html {
+            width: 100%; height: 100%; overflow: hidden;
+            background: var(--dark);
+            font-family: 'Segoe UI', Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+            color: #fff;
+        }
+        #game-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        /* BREAKING NEWS TICKER */
+        #news-ticker {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 30px;
+            background: #b80000; border-top: 2px solid var(--gold);
+            z-index: 15; display: flex; align-items: center; overflow: hidden;
+            font-family: 'Segoe UI', sans-serif; font-weight: 800; font-size: 13px;
+        }
+        .ticker-badge {
+            background: var(--gold); color: #000; padding: 0 14px; height: 100%;
+            display: flex; align-items: center; font-weight: 900; letter-spacing: 1px;
+            z-index: 2; box-shadow: 4px 0 10px rgba(0,0,0,0.5);
+        }
+        .ticker-wrap { flex: 1; overflow: hidden; white-space: nowrap; }
+        #ticker-text {
+            display: inline-block; padding-left: 100%;
+            animation: tickerMove 22s linear infinite;
+            letter-spacing: 1px;
+        }
+        @keyframes tickerMove { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        /* HUD */
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 30px);
+            z-index: 10; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 14px 24px;
+        }
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            width: 100%; max-width: 1250px; margin: 0 auto; gap: 16px;
+        }
+        .fighter-hud { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .fighter-hud.p2 { align-items: flex-end; }
+        .hud-header { display: flex; justify-content: space-between; width: 100%; align-items: center; }
+        .p2 .hud-header { flex-direction: row-reverse; }
+        .name-tag {
+            font-size: 20px; font-weight: 900; letter-spacing: 1.5px;
+            text-transform: uppercase; color: var(--gold);
+            text-shadow: 2px 2px 0 #000, 0 0 12px rgba(255,204,0,0.5);
+        }
+        .team-tag {
+            font-size: 11px; font-weight: 800; background: rgba(255,255,255,0.15);
+            padding: 2px 8px; border-radius: 4px; color: #ddd;
+        }
+        .round-dots { display: flex; gap: 6px; }
+        .dot {
+            width: 14px; height: 14px; border-radius: 50%;
+            border: 2px solid var(--gold); background: rgba(0,0,0,0.6);
+        }
+        .dot.won { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+
+        .hp-container {
+            width: 100%; height: 26px; background: rgba(0,0,0,0.75);
+            border: 2px solid #fff; transform: skewX(-15deg);
+            position: relative; overflow: hidden; box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+        }
+        .hp-damage {
+            position: absolute; top: 0; height: 100%; background: #ff2244;
+            transition: width 0.45s ease-out;
+        }
+        .hp-fill {
+            position: absolute; top: 0; height: 100%;
+            background: linear-gradient(90deg, #18c964, #a6ff00);
+            transition: width 0.08s linear;
+        }
+        .p1 .hp-fill, .p1 .hp-damage { left: 0; }
+        .p2 .hp-fill, .p2 .hp-damage { right: 0; background: linear-gradient(-90deg, #ff7700, #ffcc00); }
+
+        /* SHAKTI BAR */
+        .shakti-wrap {
+            width: 82%; display: flex; align-items: center; gap: 8px;
+        }
+        .p2 .shakti-wrap { flex-direction: row-reverse; }
+        .shakti-label { font-size: 11px; font-weight: 900; color: var(--shakti); letter-spacing: 1px; }
+        .shakti-container {
+            flex: 1; height: 12px; background: rgba(0,0,0,0.8);
+            border: 1.5px solid rgba(0,240,255,0.5); transform: skewX(-15deg); overflow: hidden;
+        }
+        .shakti-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #0077ff, var(--shakti));
+            transition: width 0.1s linear;
+        }
+        .shakti-full {
+            background: linear-gradient(90deg, var(--gold), #ff3300, var(--gold));
+            animation: pulseGlow 0.5s infinite alternate;
+        }
+        @keyframes pulseGlow { from { filter: brightness(1); } to { filter: brightness(1.6); } }
+
+        /* SHANTI BAR (FOR MBAPU BOSS) */
+        #shanti-box {
+            display: none; position: absolute; top: 96px; left: 50%; transform: translateX(-50%);
+            width: 340px; background: rgba(0,0,0,0.85); border: 2px solid #fff;
+            border-radius: 6px; padding: 6px 12px; text-align: center;
+        }
+        #shanti-box .title { font-size: 11px; font-weight: 900; color: #a6ff00; letter-spacing: 1px; }
+        .shanti-bar-bg { width: 100%; height: 8px; background: #222; margin-top: 4px; border-radius: 4px; overflow: hidden; }
+        #shanti-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #00e676, #ffffff); }
+
+        .timer-box {
+            width: 80px; height: 68px; background: linear-gradient(180deg, #222, #090a0f);
+            border: 3px solid var(--gold); transform: skewX(-8deg);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+        }
+        .timer-box span { font-size: 10px; color: var(--gold); letter-spacing: 1px; font-weight: 800; }
+        #match-timer { font-size: 34px; font-weight: 900; color: #fff; line-height: 1; }
+
+        /* ANNOUNCER & MOVE POPUPS */
+        #center-announcer {
+            position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+            font-size: 62px; font-weight: 900; font-style: italic;
+            text-transform: uppercase; color: var(--gold);
+            text-shadow: 4px 4px 0 #000, 0 0 35px rgba(255,119,0,0.9);
+            opacity: 0; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center; white-space: nowrap; z-index: 12;
+        }
+        .move-callout {
+            position: absolute; top: 130px; font-size: 26px; font-weight: 900;
+            font-style: italic; padding: 4px 14px; background: rgba(0,0,0,0.75);
+            border-left: 5px solid var(--gold); transform: skewX(-12deg);
+            opacity: 0; transition: all 0.15s; text-shadow: 2px 2px 0 #000;
+        }
+        #p1-callout { left: 28px; color: var(--shakti); }
+        #p2-callout { right: 28px; color: var(--gold); border-left: none; border-right: 5px solid var(--red); }
+
+        /* CONTROLS LEGEND */
+        .bottom-ui {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            width: 100%; max-width: 1250px; margin: 0 auto;
+        }
+        .controls-hint {
+            background: rgba(8, 10, 16, 0.88); padding: 8px 14px;
+            border-radius: 6px; border: 1px solid rgba(255,204,0,0.4);
+            font-size: 12px; line-height: 1.6; color: #ddd; font-family: 'Segoe UI', sans-serif;
+        }
+        .controls-hint b { color: var(--gold); background: rgba(255,255,255,0.12); padding: 1px 6px; border-radius: 3px; }
+
+        /* TOUCH CONTROLS */
+        #touch-controls {
+            display: none; width: 100%; justify-content: space-between; pointer-events: auto;
+        }
+        .touch-group { display: flex; gap: 8px; align-items: center; }
+        .touch-btn {
+            width: 56px; height: 56px; border-radius: 50%;
+            background: rgba(0,0,0,0.7); border: 2px solid var(--gold);
+            color: #fff; font-weight: 900; font-size: 12px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .touch-btn:active { background: var(--saffron); transform: scale(0.92); }
+        .touch-btn.super-btn { width: 68px; height: 68px; border-color: var(--shakti); background: rgba(0,180,255,0.3); }
+
+        /* MODALS: DISCLAIMER & CHARACTER SELECT */
+        .modal-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(25,18,10,0.92) 0%, rgba(6,7,12,0.98) 100%);
+            z-index: 30; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding: 20px; pointer-events: auto;
+        }
+        .satire-box {
+            max-width: 660px; background: #12151f; border: 2px solid var(--gold);
+            padding: 24px; border-radius: 10px; text-align: center; box-shadow: 0 15px 40px #000;
+        }
+        .satire-box h2 { color: var(--gold); margin-bottom: 12px; font-size: 26px; letter-spacing: 1px; }
+        .satire-box p { font-family: 'Segoe UI', sans-serif; font-size: 14px; color: #ccc; line-height: 1.5; margin-bottom: 12px; }
+        .btn-gold {
+            padding: 12px 34px; font-size: 18px; font-weight: 900; letter-spacing: 2px;
+            background: linear-gradient(90deg, var(--saffron), var(--gold));
+            color: #000; border: none; border-radius: 4px; cursor: pointer;
+            transform: skewX(-10deg); box-shadow: 0 0 20px rgba(255,165,0,0.6);
+        }
+        .btn-gold:hover { filter: brightness(1.15); transform: skewX(-10deg) scale(1.05); }
+
+        #select-screen { display: none; gap: 14px; }
+        .game-title {
+            font-size: 46px; font-weight: 900; font-style: italic; letter-spacing: 3px;
+            background: linear-gradient(90deg, #ff7700, #ffcc00, #ffffff, #00e676);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-align: center; line-height: 1;
+        }
+        .game-subtitle { color: var(--gold); font-size: 14px; letter-spacing: 4px; margin-bottom: 6px; }
+        .roster-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            max-width: 860px; width: 100%;
+        }
+        .char-card {
+            background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px; padding: 10px; cursor: pointer; text-align: center;
+            transition: all 0.15s; position: relative;
+        }
+        .char-card:hover, .char-card.selected-p1 {
+            border-color: var(--shakti); background: rgba(0, 240, 255, 0.14);
+            transform: translateY(-3px);
+        }
+        .char-card.selected-p2 { border-color: var(--red); background: rgba(255, 34, 68, 0.15); }
+        .char-avatar {
+            width: 54px; height: 54px; border-radius: 50%; margin: 0 auto 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; font-weight: 900; border: 2px solid #fff;
+        }
+        .char-name { font-size: 16px; font-weight: 900; color: #fff; }
+        .char-team { font-size: 11px; color: var(--gold); font-family: 'Segoe UI', sans-serif; font-weight: 700; }
+        .char-super { font-size: 10px; color: #aaa; margin-top: 4px; font-family: 'Segoe UI', sans-serif; }
+
+        .stage-row { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+        .stage-btn {
+            padding: 7px 16px; background: #1b2030; color: #fff; border: 1.5px solid #555;
+            cursor: pointer; font-weight: 800; border-radius: 4px;
+        }
+        .stage-btn.active { border-color: var(--gold); background: #3a2a10; color: var(--gold); }
+
+        @media (max-width: 850px), (pointer: coarse) {
+            .controls-hint { display: none; }
+            #touch-controls { display: flex; }
+            .roster-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+            .game-title { font-size: 28px; }
+        }
+
+/* ===== real fightkaro.com face portraits in the roster grid ===== */
+.char-avatar { overflow: hidden; position: relative; padding: 0; }
+.char-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; border-radius: 50%; display: block; }
