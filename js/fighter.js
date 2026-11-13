@@ -594,10 +594,9 @@ class NetaFighter {
   loadRealModel() {
     const name = CHAR_MODEL[this.data.id];
     if (!name) return;
-    // the box rig is a placeholder, not the fighter: hide it the moment the
-    // real model starts loading so nobody sees the old figure pop in
-    if (this.rigGroup) this.rigGroup.visible = false;
     const token = (this.loadToken = (this.loadToken || 0) + 1);
+    // the box rig stays on screen while the GLB downloads: hiding it up front
+    // leaves an invisible fighter on a slow connection
     loadCharacterModel(name).then((gltf) => {
       if (token !== this.loadToken) return;      // character changed mid-load
       this.attachGLB(gltf, name);

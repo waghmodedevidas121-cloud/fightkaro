@@ -88,12 +88,18 @@ window.addEventListener('DOMContentLoaded', () => {
        -------------------------------------------------------------- */
     const noServer = document.getElementById('noserver');
     if (noServer) {
+        const noServerHint = document.getElementById('noserver-hint');
+        const hintFor = () => (location.protocol === 'file:'
+            ? 'Game seedha file se khula hai: Start FightKaro.bat double-click karo (ya node serve.mjs chalao, phir localhost:8150 kholo).'
+            : 'Connection slow lag raha hai - page reload karo (Ctrl+R), models dobara download ho jayenge.');
+        const showNoServer = () => {
+            if (noServerHint) noServerHint.textContent = ' ' + hintFor();
+            noServer.hidden = false;
+        };
         const closeNoServer = document.getElementById('noserver-close');
         if (closeNoServer) closeNoServer.addEventListener('click', () => { noServer.hidden = true; });
-        if (location.protocol === 'file:') noServer.hidden = false;
-        document.addEventListener('fk:modelfail', () => {
-            if (location.protocol === 'file:') noServer.hidden = false;
-        });
+        if (location.protocol === 'file:') showNoServer();
+        document.addEventListener('fk:modelfail', showNoServer);
     }
 
     /* --------------------------------------------------------------
@@ -115,6 +121,18 @@ window.addEventListener('DOMContentLoaded', () => {
             if (g) { preloadModel(g.p1Choice); preloadModel(g.p2Choice); }
         }
     }, true);
+
+    /* a stalled GLB never throws - watch for it so the hint still appears */
+    let watchTicks = 0;
+    const modelWatch = setInterval(() => {
+        const g = window.game;
+        if (!g || !g.p1 || (g.p1.glbRoot && g.p2.glbRoot)) { clearInterval(modelWatch); return; }
+        if (!g.matchActive) { watchTicks = 0; return; }
+        if (++watchTicks >= 20) {
+            clearInterval(modelWatch);
+            document.dispatchEvent(new CustomEvent('fk:modelfail', { detail: 'timeout' }));
+        }
+    }, 1000);
 
     /* --------------------------------------------------------------
        ?demo=select | ?demo=fight  — deterministic capture harness.
