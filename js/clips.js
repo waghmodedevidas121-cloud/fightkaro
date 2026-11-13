@@ -139,7 +139,12 @@ function loadCharacterModel(name, attempt) {
     if (!L) return Promise.reject(new Error('GLTFLoader missing'));
     // page opened straight from disk: browsers block GLB over file://
     MODEL_CACHE[name] = new Promise((resolve, reject) => {
-        L.load('models/' + name + '.glb', resolve, undefined, reject);
+        L.load('models/' + name + '.glb', resolve, (ev) => {
+            if (!ev || !ev.total) return;
+            document.dispatchEvent(new CustomEvent('fk:modelprogress', {
+                detail: { name, pct: Math.round((ev.loaded / ev.total) * 100) }
+            }));
+        }, reject);
     }).catch((err) => {
         // a failed load must never poison the cache - otherwise the fighter is
         // stuck on the placeholder rig for the rest of the session

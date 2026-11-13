@@ -122,14 +122,28 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }, true);
 
+    /* per-model download progress: a 1.2 MB GLB on a slow link is a long wait */
+    const modelLoad = document.getElementById('model-load');
+    const modelBar = modelLoad && modelLoad.querySelector('.ml-bar i');
+    const modelTxt = modelLoad && modelLoad.querySelector('.ml-txt');
+    const hideModelLoad = () => { if (modelLoad) modelLoad.hidden = true; };
+    document.addEventListener('fk:modelprogress', (e) => {
+        if (!modelLoad) return;
+        const pct = Math.max(1, Math.min(99, e.detail.pct));
+        modelLoad.hidden = false;
+        if (modelBar) modelBar.style.width = pct + '%';
+        if (modelTxt) modelTxt.textContent = '3D MODELS ' + pct + '%';
+    });
+
     /* a stalled GLB never throws - watch for it so the hint still appears */
     let watchTicks = 0;
     const modelWatch = setInterval(() => {
         const g = window.game;
-        if (!g || !g.p1 || (g.p1.glbRoot && g.p2.glbRoot)) { clearInterval(modelWatch); return; }
+        if (!g || !g.p1 || (g.p1.glbRoot && g.p2.glbRoot)) { clearInterval(modelWatch); hideModelLoad(); return; }
         if (!g.matchActive) { watchTicks = 0; return; }
         if (++watchTicks >= 20) {
             clearInterval(modelWatch);
+            hideModelLoad();
             document.dispatchEvent(new CustomEvent('fk:modelfail', { detail: 'timeout' }));
         }
     }, 1000);

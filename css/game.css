@@ -1130,6 +1130,48 @@ body.sound-off #hud-settings    { opacity: 0.9; }
 }
 #noserver button:hover { background: rgba(255, 194, 51, 0.3); }
 
+/* ------------------------------------------------------------------ *
+ *  live GLB download progress (github.io is slow on big models)
+ * ------------------------------------------------------------------ */
+#model-load {
+    position: fixed;
+    left: 50%;
+    bottom: 66px;
+    transform: translateX(-50%);
+    z-index: 88;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px;
+    border: 1px solid rgba(255, 194, 51, 0.35);
+    border-radius: 999px;
+    background: rgba(10, 8, 5, 0.86);
+    color: #ffd873;
+    font: 700 10px/1 "Rajdhani", system-ui, sans-serif;
+    letter-spacing: 0.16em;
+    pointer-events: none;
+}
+#model-load[hidden] { display: none; }
+#model-load .ml-bar {
+    display: block;
+    width: 88px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    overflow: hidden;
+}
+#model-load .ml-bar i {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ffc233, #ffe9a8);
+    transition: width 0.2s linear;
+}
+@media (max-width: 540px) {
+    #model-load { bottom: 52px; padding: 5px 10px; font-size: 9px; }
+    #model-load .ml-bar { width: 56px; }
+}
+
 /* ===== real fightkaro.com face portraits in the roster grid ===== */
 .char-avatar { overflow: hidden; position: relative; padding: 0; }
 .char-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; border-radius: 50%; display: block; }
