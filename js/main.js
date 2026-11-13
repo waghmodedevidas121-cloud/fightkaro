@@ -55,6 +55,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const gearBtn = document.getElementById('hud-settings');
     const panel = document.getElementById('hud-panel');
+
+    /* the full settings screen shares this exact state */
+    window.FKUI_SETTINGS = {
+        get: () => settings,
+        set: (k, v) => { settings[k] = v; applySettings(); },
+        apply: applySettings
+    };
     if (gearBtn && panel) {
         gearBtn.addEventListener('click', (e) => {
             e.stopPropagation();

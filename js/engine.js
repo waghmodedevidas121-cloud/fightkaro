@@ -257,6 +257,7 @@ class SansadShowdownEngine {
 
         // Show Shanti Route Box if fighting Boss MBAPU
         document.getElementById('shanti-box').style.display = this.p2.data.id === 'MBAPU' ? 'block' : 'none';
+        document.getElementById('hud').classList.add('on');
         sfx.setTrack('battle', 0.2);
 
         this.startRound();
@@ -391,6 +392,7 @@ class SansadShowdownEngine {
      * ========================================================================
      */
     launchSuper(attacker, defender) {
+        if (window.FKUI) window.FKUI.onSuper(attacker);
         attacker.shakti = 0;
         attacker.state = 'SUPER_ACTIVE';
         defender.state = 'HITSTUN';
@@ -649,6 +651,7 @@ class SansadShowdownEngine {
             const finalDmg = m.dmg * atk.data.dmgMult * (isCounter ? 1.2 : 1.0) * scale;
 
             def.hp = Math.max(0, def.hp - finalDmg);
+            if (window.FKUI) window.FKUI.onHit(atk, finalDmg);
             def.vel.x = atk.facing * m.push;
 
             // Official FightKaro Shakti Formula: Attacker = dmg * 0.9 + 2, Defender = dmg * 0.6
@@ -717,7 +720,8 @@ class SansadShowdownEngine {
                 sfx.speak(`${champ.data.name} jeet gaye! Kursi mili!`);
             }, 600);
             setTimeout(() => {
-                document.getElementById('select-screen').style.display = 'flex';
+                if (window.FKUI) window.FKUI.matchEnd(this);
+                else document.getElementById('select-screen').style.display = 'flex';
             }, 3400);
         } else {
             this.round++;

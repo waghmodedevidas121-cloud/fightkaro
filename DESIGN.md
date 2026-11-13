@@ -34,11 +34,29 @@ Blind `setTimeout` voice nahi. Har cue animation phase se bandha hai:
 - strike phase change -> `release_<char>` + bed cut
 - progress >= 0.75 -> ek `super_hit` + `boom`
 
-## 3D models
+## 3D models & loading screen
 
-`models/*.glb` **sirf http se load hote hain**. `file://` par browser ka CORS
-block lagta hai aur fighter placeholder box rig par reh jata hai - isliye
-`Start FightKaro.bat` (`node serve.mjs`) hi entry point hai.
-Select screen par card click = us character ka GLB preload, taaki fight
-shuru hote hi asli model tayar ho. Fail hone par 3 retry, aur live download
-progress badge fight ke neeche dikhta hai.
+- **Box rig permanently removed**: `rigGroup.visible = false` at construction.
+- **VS Battle Prep loading gate**: match shuru hone se pehle real `models/*.glb` load hone ka wait karta hai (`#vs-screen` with progress bar & fighter portraits). Slow connection par 12s timeout safety net.
+- **Ghost beam fallback**: Model load fail hone par box rig ke bajaye soft glowing light column fighter ko mark karta hai (`showGhost()`).
+- `models/*.glb` **sirf http se load hote hain**. `file://` par browser ka CORS
+block lagta hai - isliye `Start FightKaro.bat` (`node serve.mjs`) hi entry point hai.
+Select screen par card click = us character ka GLB preload.
+
+## UI v3 Screen Architecture
+
+Reverse-engineered from AAA fighting games (TEKKEN 8, Street Fighter 6, Guilty Gear -Strive-, KOF XV) with an original "brass & ink" visual design language:
+
+| Screen | Id | Features |
+| --- | --- | --- |
+| Satire Notice | `#disclaimer-screen` | Fictional parody notice with "I Understand" entry |
+| Boot | `#boot-screen` | Engine initialization progress bar & status hint |
+| Main Menu | `#menu-screen` | Brand mark, 01-04 keyboard/click nav, roster preview, live career record card |
+| Character Select | `#select-screen` | P1 vs CPU pick plates, 8-card roster grid, dynamic stat radar/bars, arena selector |
+| VS / Battle Prep | `#vs-screen` | Faceoff screen with model download gate & progress bar |
+| Battle HUD | `#hud` | Slanted chamfered HP bars with damage trail, cyan shakti gauge, timer box, clean controls hint |
+| Pause Menu | `#pause-screen` | Background blur, Resume / Restart / Settings / Quit options, live score |
+| Match Results | `#results-screen` | Victory/defeat kicker, 1:1 fighter portraits, combat stats (combo, shakti, time, damage), Rematch / Select / Menu actions |
+| Settings | `#settings-screen` | Master sound, music slider, touch buttons (Auto/On/Off), controls hint, career reset |
+| Career Profile | `#profile-screen` | Most played neta card, matches/wins/win rate/supers/combo/longest stats, per-neta usage breakdown (`localStorage`) |
+| How to Play | `#moves-screen` | Full keyboard controls legend, core rules, specials list for all 8 netas |

@@ -127,9 +127,12 @@ try {
     await Promise.race([loaded, sleep(20000)]);
     await sleep(waitMs);
 
-    if (opt('eval', null)) {
+    const evalSource = opt('eval-file', null)
+        ? fs.readFileSync(opt('eval-file'), 'utf8')
+        : opt('eval', null);
+    if (evalSource) {
         const r = await send('Runtime.evaluate', {
-            expression: opt('eval', '1'), returnByValue: true, awaitPromise: true
+            expression: evalSource, returnByValue: true, awaitPromise: true
         });
         console.log('eval:', JSON.stringify(r.result?.value ?? r.result?.description ?? null));
     }

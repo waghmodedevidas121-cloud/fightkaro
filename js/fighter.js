@@ -53,6 +53,10 @@ class NetaFighter {
     this.bones = {};
     this.targetRot = {};
     this.buildRig();
+    // the primitive box figure is a skeleton for the IK only — it is never
+    // shown. Fighters are the real GLB models, or a beam marker if a model
+    // genuinely cannot be fetched.
+    if (this.rigGroup) this.rigGroup.visible = false;
     this.loadRealModel();
   }
 
@@ -601,11 +605,27 @@ class NetaFighter {
       if (token !== this.loadToken) return;      // character changed mid-load
       this.attachGLB(gltf, name);
     }).catch((err) => {
-      if (token === this.loadToken && !this.glbRoot && this.rigGroup) {
-        this.rigGroup.visible = true;            // fall back to the box rig
-      }
-      console.warn('[fighter] ' + name + '.glb failed, keeping primitive rig:', err && err.message);
+      if (token !== this.loadToken) return;
+      if (this.rigGroup) this.rigGroup.visible = false;   // never show the box rig
+      this.showGhost();                                   // readable placeholder instead
+      console.warn('[fighter] ' + name + '.glb failed:', err && err.message);
     });
+  }
+
+  /* a soft light column marks a fighter whose model could not be loaded */
+  showGhost() {
+    if (this.ghost) return;
+    const geo = new THREE.CylinderGeometry(0.34, 0.5, 1.8, 18, 1, true);
+    const mat = new THREE.MeshBasicMaterial({
+      color: this.isP1 ? 0xffc233 : 0xff6a5e,
+      transparent: true,
+      opacity: 0.29,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.ghost = new THREE.Mesh(geo, mat);
+    this.ghost.position.y = 0.9;
+    this.root.add(this.ghost);
   }
 
   detachGLB() {
@@ -626,6 +646,12 @@ class NetaFighter {
 
   attachGLB(gltf, name) {
     this.detachGLB();
+    if (this.ghost) {
+      this.root.remove(this.ghost);
+      if (this.ghost.geometry) this.ghost.geometry.dispose();
+      if (this.ghost.material) this.ghost.material.dispose();
+      this.ghost = null;
+    }
 
     const source = gltf.scene;
     const box = new THREE.Box3().setFromObject(source);
