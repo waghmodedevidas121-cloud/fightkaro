@@ -5,7 +5,12 @@ animation, leg IK, impact VFX and a cinematic camera.
 
 ## Run
 
-Double click `index.html`, or serve it:
+Double click `Start FightKaro.bat` - it starts the local server and opens the game.
+
+> `index.html` ko seedha double-click mat karo. Browsers `file://` par
+> `models/*.glb` block karte hain, isliye fighters purane box rig par
+> fallback ho jate hain. Hamesha `Start FightKaro.bat` (ya neeche wala
+> server) use karo.
 
 ```bash
 node serve.mjs        # http://localhost:8150

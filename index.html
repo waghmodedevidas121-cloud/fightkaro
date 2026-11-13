@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="fk-build" content="bmwf3icr1">
+<link rel="icon" href="data:,">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SANSAD SHOWDOWN // The Great Kursi Fight</title>
-<link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/game.css?v=bmwf3icr1">
 </head>
 <body>
 <canvas id="game-canvas"></canvas>
@@ -43,54 +45,93 @@
 
     <!-- 3. IN-GAME HUD -->
     <div id="hud">
-        <div class="top-bar">
+        <div class="hud-top">
             <div class="fighter-hud p1">
-                <div class="hud-header">
-                    <div>
-                        <div class="name-tag" id="p1-name">MITRAMAN</div>
-                        <span class="team-tag" id="p1-team">Team Vaada</span>
+                <div class="portrait"><img id="p1-face" src="faces/modi.webp" alt=""></div>
+                <div class="stack">
+                    <div class="hud-header">
+                        <div>
+                            <div class="name-tag" id="p1-name">MITRAMAN</div>
+                            <span class="team-tag" id="p1-team">Team Vaada</span>
+                        </div>
+                        <div class="round-dots">
+                            <div class="dot" id="p1-r1"></div>
+                            <div class="dot" id="p1-r2"></div>
+                        </div>
                     </div>
-                    <div class="round-dots">
-                        <div class="dot" id="p1-r1"></div>
-                        <div class="dot" id="p1-r2"></div>
+                    <div class="hp-container">
+                        <div id="p1-hp-dmg" class="hp-damage" style="width: 100%;"></div>
+                        <div id="p1-hp" class="hp-fill" style="width: 100%;"></div>
                     </div>
-                </div>
-                <div class="hp-container">
-                    <div id="p1-hp-dmg" class="hp-damage" style="width: 100%;"></div>
-                    <div id="p1-hp" class="hp-fill" style="width: 100%;"></div>
-                </div>
-                <div class="shakti-wrap">
-                    <span class="shakti-label" id="p1-shakti-txt">SHAKTI 0%</span>
-                    <div class="shakti-container">
-                        <div id="p1-shakti" class="shakti-fill"></div>
+                    <div class="shakti-wrap">
+                        <div class="shakti-container"><div id="p1-shakti" class="shakti-fill"></div></div>
+                        <span class="shakti-label" id="p1-shakti-txt">SHAKTI 0%</span>
                     </div>
                 </div>
             </div>
 
-            <div class="timer-box">
-                <span>KURSI</span>
-                <div id="match-timer">60</div>
+            <div class="hud-center">
+                <div class="round-label" id="round-label">ROUND 1</div>
+                <div class="timer-box">
+                    <span>KURSI</span>
+                    <div id="match-timer">60</div>
+                </div>
+                <button id="hud-settings" type="button" aria-label="Settings">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7zm7.4-2.6.1-1-.1-1 2-1.5-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5H11l-.3 2.5c-.6.2-1.2.6-1.7 1l-2.4-1-2 3.4L6.5 11l-.1 1 .1 1-2 1.5 2 3.4 2.4-1c.5.4 1.1.8 1.7 1l.3 2.6h4l.3-2.6c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.4-1.9-1.5z"/></svg>
+                </button>
+
+                <div id="hud-panel" role="dialog" aria-label="Game settings">
+                    <div class="panel-title">SETTINGS</div>
+
+                    <div class="panel-row">
+                        <span class="panel-label">TOUCH BUTTONS</span>
+                        <div class="seg" data-setting="touch">
+                            <button type="button" data-val="auto">AUTO</button>
+                            <button type="button" data-val="on">ON</button>
+                            <button type="button" data-val="off">OFF</button>
+                        </div>
+                    </div>
+
+                    <div class="panel-row">
+                        <span class="panel-label">KEY HINT</span>
+                        <div class="seg" data-setting="hint">
+                            <button type="button" data-val="on">ON</button>
+                            <button type="button" data-val="off">OFF</button>
+                        </div>
+                    </div>
+
+                    <div class="panel-row">
+                        <span class="panel-label">SOUND</span>
+                        <div class="seg" data-setting="sound">
+                            <button type="button" data-val="on">ON</button>
+                            <button type="button" data-val="off">OFF</button>
+                        </div>
+                    </div>
+
+                    <button type="button" id="hud-panel-close" class="panel-close">CLOSE</button>
+                </div>
             </div>
 
             <div class="fighter-hud p2">
-                <div class="hud-header">
-                    <div>
-                        <div class="name-tag" id="p2-name">YATRA BOY</div>
-                        <span class="team-tag" id="p2-team">Team Yatra</span>
+                <div class="portrait"><img id="p2-face" src="faces/rahul.webp" alt=""></div>
+                <div class="stack">
+                    <div class="hud-header">
+                        <div>
+                            <div class="name-tag" id="p2-name">YATRA BOY</div>
+                            <span class="team-tag" id="p2-team">Team Yatra</span>
+                        </div>
+                        <div class="round-dots">
+                            <div class="dot" id="p2-r1"></div>
+                            <div class="dot" id="p2-r2"></div>
+                        </div>
                     </div>
-                    <div class="round-dots">
-                        <div class="dot" id="p2-r1"></div>
-                        <div class="dot" id="p2-r2"></div>
+                    <div class="hp-container">
+                        <div id="p2-hp-dmg" class="hp-damage" style="width: 100%;"></div>
+                        <div id="p2-hp" class="hp-fill" style="width: 100%;"></div>
                     </div>
-                </div>
-                <div class="hp-container">
-                    <div id="p2-hp-dmg" class="hp-damage" style="width: 100%;"></div>
-                    <div id="p2-hp" class="hp-fill" style="width: 100%;"></div>
-                </div>
-                <div class="shakti-wrap">
-                    <span class="shakti-label" id="p2-shakti-txt">SHAKTI 0%</span>
-                    <div class="shakti-container">
-                        <div id="p2-shakti" class="shakti-fill"></div>
+                    <div class="shakti-wrap">
+                        <div class="shakti-container"><div id="p2-shakti" class="shakti-fill"></div></div>
+                        <span class="shakti-label" id="p2-shakti-txt">SHAKTI 0%</span>
                     </div>
                 </div>
             </div>
@@ -98,7 +139,7 @@
 
         <!-- MBAPU SHANTI / PEACE METER -->
         <div id="shanti-box">
-            <div class="title">🕊️ SHANTI ROUTE: STAY CLOSE, DO NOT ATTACK & BLOCK 5 HITS (<span id="shanti-blocks">0/5</span>)</div>
+            <div class="title">SHANTI ROUTE: STAY CLOSE, DO NOT ATTACK &amp; BLOCK 5 HITS (<span id="shanti-blocks">0/5</span>)</div>
             <div class="shanti-bar-bg"><div id="shanti-fill"></div></div>
         </div>
 
@@ -108,25 +149,37 @@
 
         <div class="bottom-ui">
             <div class="controls-hint">
-                MOVE: <b>A/D / ←/→</b> | JUMP: <b>W / ↑ / E / Space</b> | CROUCH: <b>S / ↓</b> | BLOCK: <b>Hold Back</b><br>
-                PUNCH: <b>J / Z / F</b> | KICK: <b>K / X / H</b> | GRAB: <b>I / C / G</b> | <span style="color:var(--shakti);font-weight:900;">SHAKTI SUPER (100%):</span> <b>L / SPACE / V / U</b>
-            </div>
-
-            <div id="touch-controls">
-                <div class="touch-group">
-                    <div class="touch-btn" data-key="KeyA">◀</div>
-                    <div class="touch-btn" data-key="KeyS">▼</div>
-                    <div class="touch-btn" data-key="KeyW">▲</div>
-                    <div class="touch-btn" data-key="KeyD">▶</div>
-                </div>
-                <div class="touch-group">
-                    <div class="touch-btn" data-key="KeyJ">PUNCH</div>
-                    <div class="touch-btn" data-key="KeyK">KICK</div>
-                    <div class="touch-btn" data-key="KeyI">GRAB</div>
-                    <div class="touch-btn super-btn" data-key="KeyL">SHAKTI!</div>
-                </div>
+                MOVE <b>A</b><b>D</b> &nbsp;·&nbsp; JUMP <b>W</b> &nbsp;·&nbsp; CROUCH <b>S</b> &nbsp;·&nbsp; BLOCK <b>HOLD BACK</b><br>
+                PUNCH <b>J</b> &nbsp;·&nbsp; KICK <b>K</b> &nbsp;·&nbsp; GRAB <b>I</b> &nbsp;·&nbsp; SPECIAL <b>&#8594;+J</b> <b>&#8594;+K</b> <b>&#8595;+K</b> &nbsp;·&nbsp;
+                <span style="color:var(--shakti);font-weight:900;">SHAKTI 100%</span> <b>L</b><b>SPACE</b>
             </div>
         </div>
+    </div>
+
+    <div id="touch-controls">
+        <div class="touch-group dpad">
+            <div class="touch-btn" data-key="KeyA"></div>
+            <div class="touch-btn" data-key="KeyS"></div>
+            <div class="touch-btn" data-key="KeyW"></div>
+            <div class="touch-btn" data-key="KeyD"></div>
+        </div>
+        <div class="touch-group attack">
+            <div class="touch-btn" data-key="KeyJ">PUNCH</div>
+            <div class="touch-btn" data-key="KeyK">KICK</div>
+            <div class="touch-btn" data-key="KeyI">GRAB</div>
+            <div class="touch-btn super-btn" data-key="KeyL">SHAKTI</div>
+        </div>
+    </div>
+
+    <!-- 3D model load warning: file:// or blocked assets -->
+    <div id="noserver" role="alert" hidden>
+        <div class="ns-head">3D MODELS LOAD HO NAHI RAHE</div>
+        <p class="ns-body">
+            Game seedha file se khula hai, isliye browser <code>models/*.glb</code> block karta hai
+            aur purane box fighters dikhte hain. <b>Start FightKaro.bat</b> double-click karo
+            (ya <code>node serve.mjs</code> chala ke <code>localhost:8150</code> kholo).
+        </p>
+        <button id="noserver-close" type="button">samajh gaya</button>
     </div>
 
     <!-- BREAKING NEWS TICKER -->
@@ -139,17 +192,17 @@
         </div>
     </div>
 
-<script src="js/vendor/three.min.js"></script>
-<script src="js/vendor/GLTFLoader.js"></script>
-<script src="js/vendor/DRACOLoader.js"></script>
-<script src="js/data.js"></script>
-<script src="js/clips.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/vfx.js"></script>
-<script src="js/props.js"></script>
-<script src="js/rig.js"></script>
-<script src="js/fighter.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/main.js"></script>
+<script src="js/vendor/three.min.js?v=bmwf3icr1"></script>
+<script src="js/vendor/GLTFLoader.js?v=bmwf3icr1"></script>
+<script src="js/vendor/DRACOLoader.js?v=bmwf3icr1"></script>
+<script src="js/data.js?v=bmwf3icr1"></script>
+<script src="js/clips.js?v=bmwf3icr1"></script>
+<script src="js/audio.js?v=bmwf3icr1"></script>
+<script src="js/vfx.js?v=bmwf3icr1"></script>
+<script src="js/props.js?v=bmwf3icr1"></script>
+<script src="js/rig.js?v=bmwf3icr1"></script>
+<script src="js/fighter.js?v=bmwf3icr1"></script>
+<script src="js/engine.js?v=bmwf3icr1"></script>
+<script src="js/main.js?v=bmwf3icr1"></script>
 </body>
 </html>

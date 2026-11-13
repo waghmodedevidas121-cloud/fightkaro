@@ -132,12 +132,25 @@ const MODEL_LOADER = (function () {
 
 // small promise cache so p1 and p2 never download the same GLB twice
 const MODEL_CACHE = {};
-function loadCharacterModel(name) {
+function loadCharacterModel(name, attempt) {
     if (MODEL_CACHE[name]) return MODEL_CACHE[name];
+    const tries = (attempt || 0) + 1;
     const L = MODEL_LOADER();
     if (!L) return Promise.reject(new Error('GLTFLoader missing'));
+    // page opened straight from disk: browsers block GLB over file://
     MODEL_CACHE[name] = new Promise((resolve, reject) => {
         L.load('models/' + name + '.glb', resolve, undefined, reject);
+    }).catch((err) => {
+        // a failed load must never poison the cache - otherwise the fighter is
+        // stuck on the placeholder rig for the rest of the session
+        if (tries < 3) {
+            delete MODEL_CACHE[name];
+            return new Promise((r) => setTimeout(r, 400 * tries)).then(() => loadCharacterModel(name, tries));
+        }
+        delete MODEL_CACHE[name];
+        if (window.FK) (window.FK.modelErrors = window.FK.modelErrors || []).push(name + ': ' + (err && err.message || err));
+        document.dispatchEvent(new CustomEvent('fk:modelfail', { detail: name }));
+        throw err;
     });
     return MODEL_CACHE[name];
 }

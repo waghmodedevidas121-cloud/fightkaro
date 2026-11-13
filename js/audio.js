@@ -137,6 +137,8 @@ class AudioBank {
         this.index = {};
         this.music = null;
         this.musicName = null;
+        this.bedName = null;
+        this.voiceLockUntil = 0;
     }
 
     init() {
@@ -279,13 +281,58 @@ class AudioBank {
     fightCall() { this.play('fight'); this.duckMusic(0.5, 1500); }
     perfectCall() { this.play('perfect'); }
     timeUpCall() { this.play('time_up'); }
-    introVoice(rosterId) {
+
+    /* ------------------------------------------------------------------
+       voice lock
+       Only one spoken line may run at a time. Round call > intro line >
+       super shout never step on each other, which is what made the old
+       build sound like three clips fighting for the same second.
+       ------------------------------------------------------------------ */
+    voice(rosterId, opts) {
         const p = VOICE_PACK[rosterId];
-        if (p) this.play(p.voice, { vol: 0.8 });
+        if (!p) return null;
+        const now = performance.now();
+        if (now < (this.voiceLockUntil || 0)) return null;
+        const line = this.play(p.voice, opts || { vol: 0.85 });
+        this.voiceLockUntil = now + 1500;
+        return line;
     }
-    winVoice(rosterId) {
-        const p = VOICE_PACK[rosterId];
-        if (p) this.play(p.voice, { vol: 0.8 });
+    unlockVoice() { this.voiceLockUntil = 0; }
+
+    introVoice(rosterId) { return this.voice(rosterId, { vol: 0.8 }); }
+    winVoice(rosterId) { return this.voice(rosterId, { vol: 0.8 }); }
+
+    /* ---------------- super move cue chain ----------------
+       0.00 s  activation : shout + charge riser
+       0.55 p  strike     : release swoosh, bed cut
+       0.80 p  impact     : one heavy boom
+       Each step is fired by the engine at the exact frame the animation
+       reaches that phase, never by a blind setTimeout.
+       ------------------------------------------------------- */
+    stopSuperBed() {
+        if (this.bedName) { this.stop(this.bedName); this.bedName = null; }
+    }
+
+    superCue(rosterId) {
+        const p = VOICE_PACK[rosterId] || VOICE_PACK.MITRAMAN;
+        this.unlockVoice();
+        this.voice(rosterId, { vol: 0.9 });
+        this.play('super_charge', { vol: 0.75 });
+        this.bedName = p.bed;
+        this.play(p.bed, { vol: 0.5 });
+        this.duckMusic(0.55, 2600);
+    }
+
+    superStrikeCue(rosterId) {
+        const p = VOICE_PACK[rosterId] || VOICE_PACK.MITRAMAN;
+        this.stopSuperBed();
+        this.play(p.release, { vol: 0.9 });
+    }
+
+    superImpact() {
+        this.play('super_hit', { vol: 0.95 });
+        this.play('boom', { vol: 0.8 });
+        this.duckMusic(0.75, 1200);
     }
     superBed(rosterId) {
         const p = VOICE_PACK[rosterId];

@@ -594,11 +594,17 @@ class NetaFighter {
   loadRealModel() {
     const name = CHAR_MODEL[this.data.id];
     if (!name) return;
+    // the box rig is a placeholder, not the fighter: hide it the moment the
+    // real model starts loading so nobody sees the old figure pop in
+    if (this.rigGroup) this.rigGroup.visible = false;
     const token = (this.loadToken = (this.loadToken || 0) + 1);
     loadCharacterModel(name).then((gltf) => {
       if (token !== this.loadToken) return;      // character changed mid-load
       this.attachGLB(gltf, name);
     }).catch((err) => {
+      if (token === this.loadToken && !this.glbRoot && this.rigGroup) {
+        this.rigGroup.visible = true;            // fall back to the box rig
+      }
       console.warn('[fighter] ' + name + '.glb failed, keeping primitive rig:', err && err.message);
     });
   }
