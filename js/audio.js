@@ -1,23 +1,15 @@
 /**
  * ============================================================================
- * 2. AUDIO BANK  -  the real fightkaro.com sound set
- * ----------------------------------------------------------------------------
- * Every clip in ./audio is a real recording shipped with the live game
- * (hits, whoosh, gong, KO sting, round announcers, character voice lines,
- * super beds and releases, UI ticks, win/lose jingles) plus the menu and
- * fight music beds. Nothing here is synthesised.
+ * 2. AUDIO BANK  -  the real fightkaro.com sound set (ALL 11 FIGHTERS WIRED)
  * ============================================================================
  */
 
-// name -> [volume, simultaneous voices, loop]
 const SOUNDS = {
-    /* ---- ui ---- */
     ui_tap:        [0.45, 3, 0],
     ui_select:     [0.55, 3, 0],
     ui_confirm:    [0.65, 2, 0],
     ui_back:       [0.45, 2, 0],
 
-    /* ---- combat ---- */
     hit_1:         [0.88, 5, 0],
     hit_2:         [0.88, 5, 0],
     hit_3:         [0.92, 4, 0],
@@ -46,7 +38,6 @@ const SOUNDS = {
     reverse_beeps: [0.60, 1, 0],
     eye_zing:      [0.60, 2, 0],
 
-    /* ---- match flow ---- */
     bell:          [0.55, 1, 0],
     fight:         [0.92, 1, 0],
     ko:            [0.95, 1, 0],
@@ -66,7 +57,6 @@ const SOUNDS = {
     news_sting:    [0.55, 1, 0],
     intro:         [0.70, 1, 0],
 
-    /* ---- super beds / releases ---- */
     charge_chakra:   [0.75, 1, 0],
     bed_chakra:      [0.62, 1, 0],
     release_chakra:  [0.85, 1, 0],
@@ -77,7 +67,6 @@ const SOUNDS = {
     bed_bulldozer:   [0.62, 1, 0],
     release_bulldozer:[0.85, 1, 0],
 
-    /* ---- character voices ---- */
     modi:          [0.85, 1, 0],
     rahul:         [0.85, 1, 0],
     didi:          [0.85, 1, 0],
@@ -95,7 +84,6 @@ const SOUNDS = {
     amitwin:       [0.85, 1, 0],
     raviwin:       [0.85, 1, 0],
 
-    /* ---- crowd / dhol / extras ---- */
     crowd:         [0.42, 1, 0],
     dhol:          [0.50, 3, 0],
     aloolelo:      [0.50, 1, 1],
@@ -113,15 +101,18 @@ const SOUNDS = {
     super_charge:  [0.70, 1, 0]
 };
 
-// roster id -> real voice / super bed pack
 const VOICE_PACK = {
-    MITRAMAN:   { voice: 'modi',   bed: 'bed_chakra',    release: 'release_chakra',    extras: ['charge_chakra', 'shimmer'] },
-    YATRABOY:   { voice: 'rahul',  bed: 'bed_tariff',    release: 'release_tariff',    extras: ['eye_zing', 'poof'] },
-    DEEDEE:     { voice: 'didi',   bed: 'bed_jadu',      release: 'release_jadu',      extras: ['thunder', 'poof'] },
-    TARIFFTAAU: { voice: 'trump',  bed: 'bed_tariff',    release: 'release_tariff',    extras: ['kaching', 'coins', 'crate_crash'] },
-    DOZERDADA:  { voice: 'yogi',   bed: 'bed_bulldozer', release: 'release_bulldozer', extras: ['horn_long', 'engine_loop'] },
-    TOLLMAN:    { voice: 'nitin',  bed: 'bed_bulldozer', release: 'release_bulldozer', extras: ['metal_crunch', 'snap'] },
-    MBAPU:      { voice: 'mbapu',  bed: 'bed_chakra',    release: 'release_chakra',    extras: ['stamp_slam', 'bell'] }
+    MITRAMAN:   { voice: 'modi',   win: 'modi',    bed: 'bed_chakra',    release: 'release_chakra' },
+    YATRABOY:   { voice: 'rahul',  win: 'rahul',   bed: 'bed_tariff',    release: 'release_tariff' },
+    DEEDEE:     { voice: 'didi',   win: 'didi',    bed: 'bed_jadu',      release: 'release_jadu' },
+    TARIFFTAAU: { voice: 'trump',  win: 'trump',   bed: 'bed_tariff',    release: 'release_tariff' },
+    DOZERDADA:  { voice: 'yogi',   win: 'yogi',    bed: 'bed_bulldozer', release: 'release_bulldozer' },
+    TOLLMAN:    { voice: 'nitin',  win: 'nitin',   bed: 'bed_bulldozer', release: 'release_bulldozer' },
+    CHANAKYA:   { voice: 'amit',   win: 'amitwin', bed: 'bed_chakra',    release: 'release_chakra' },
+    LALUJI:     { voice: 'lalu',   win: 'lalu',    bed: 'bed_jadu',      release: 'release_jadu' },
+    RAVISH:     { voice: 'ravi',   win: 'raviwin', bed: 'bed_tariff',    release: 'release_tariff' },
+    DHRUV:      { voice: 'dhruv',  win: 'dhruv',   bed: 'bed_jadu',      release: 'release_jadu' },
+    MBAPU:      { voice: 'mbapuintro', win: 'mbapu', bed: 'bed_chakra',  release: 'release_chakra' }
 };
 
 class AudioBank {
@@ -156,7 +147,6 @@ class AudioBank {
             this.pools[name] = pool;
             this.index[name] = 0;
         }
-        // music beds are streamed through a single element
         this.music = new Audio();
         this.music.loop = true;
         this.music.preload = 'auto';
@@ -180,7 +170,7 @@ class AudioBank {
             a.playbackRate = opt.rate || 1;
             const p = a.play();
             if (p && p.catch) p.catch(() => {});
-        } catch (e) { /* autoplay guard */ }
+        } catch (e) {}
         return a;
     }
 
@@ -190,7 +180,6 @@ class AudioBank {
         for (const a of pool) { try { a.pause(); a.currentTime = 0; } catch (e) {} }
     }
 
-    /* ---------------- music beds ---------------- */
     setTrack(name, vol) {
         if (!this.ready) this.init();
         if (this.musicName === name) return;
@@ -228,7 +217,6 @@ class AudioBank {
         setTimeout(() => { this.targetMusicVol = back; }, ms || 1400);
     }
 
-    /* ---------------- engine API (unchanged names) ---------------- */
     speak(text, pitch = 1.0, rate = 1.05) {
         if (!this.voiceOn || !('speechSynthesis' in window)) return;
         try {
@@ -247,7 +235,7 @@ class AudioBank {
 
     playSlapOrPunch(heavy) {
         if (heavy) {
-            this.play(Math.random() < 0.55 ? 'hit_3' : 'hit_2', { rate: 0.95 + Math.random() * 0.1 });
+            this.play(Math.random() < 0.55 ? 'hit_heavy' : 'hit_3', { rate: 0.95 + Math.random() * 0.1 });
             if (Math.random() < 0.5) this.play('thud', { vol: 0.55 });
         } else {
             const r = Math.random();
@@ -257,7 +245,6 @@ class AudioBank {
         }
     }
 
-    /* ---------------- flavour hooks ---------------- */
     whiff() { this.play('whoosh', { rate: 0.9 + Math.random() * 0.3 }); }
     blockHit() { this.play('block', { rate: 0.95 + Math.random() * 0.12 }); }
     bell() { this.play('bell'); }
@@ -272,7 +259,6 @@ class AudioBank {
     uiConfirm() { this.play('ui_confirm'); }
     meme(which) { this.play('meme' + (which || (1 + Math.floor(Math.random() * 4)))); }
 
-    /* ---- match flow ---- */
     roundCall(n) {
         if (n >= 3) this.play('final_round');
         else this.play(n === 2 ? 'round_2' : 'round_1');
@@ -282,12 +268,6 @@ class AudioBank {
     perfectCall() { this.play('perfect'); }
     timeUpCall() { this.play('time_up'); }
 
-    /* ------------------------------------------------------------------
-       voice lock
-       Only one spoken line may run at a time. Round call > intro line >
-       super shout never step on each other, which is what made the old
-       build sound like three clips fighting for the same second.
-       ------------------------------------------------------------------ */
     voice(rosterId, opts) {
         const p = VOICE_PACK[rosterId];
         if (!p) return null;
@@ -299,16 +279,14 @@ class AudioBank {
     }
     unlockVoice() { this.voiceLockUntil = 0; }
 
-    introVoice(rosterId) { return this.voice(rosterId, { vol: 0.8 }); }
-    winVoice(rosterId) { return this.voice(rosterId, { vol: 0.8 }); }
+    introVoice(rosterId) { return this.voice(rosterId, { vol: 0.82 }); }
+    winVoice(rosterId) {
+        const p = VOICE_PACK[rosterId];
+        if (!p) return null;
+        this.unlockVoice();
+        return this.play(p.win || p.voice, { vol: 0.88 });
+    }
 
-    /* ---------------- super move cue chain ----------------
-       0.00 s  activation : shout + charge riser
-       0.55 p  strike     : release swoosh, bed cut
-       0.80 p  impact     : one heavy boom
-       Each step is fired by the engine at the exact frame the animation
-       reaches that phase, never by a blind setTimeout.
-       ------------------------------------------------------- */
     stopSuperBed() {
         if (this.bedName) { this.stop(this.bedName); this.bedName = null; }
     }

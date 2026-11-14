@@ -1,11 +1,6 @@
 /**
  * ============================================================================
- * 2. REAL CHARACTER MODELS, ANIMATION CLIPS & MOVE MAP
- * ----------------------------------------------------------------------------
- * Recovered from the live fightkaro.com build: each neta is a rigged GLB with
- * its own animation set. This file maps our fight engine's states and move
- * keys onto those real clips, and carries the original clip hit timings so the
- * strike lands exactly where the animation says it does.
+ * 2. REAL CHARACTER MODELS, ANIMATION CLIPS & MOVE MAP (ALL 11 GLBs)
  * ============================================================================
  */
 
@@ -17,16 +12,21 @@ const CHAR_MODEL = {
     TARIFFTAAU: 'trump',
     DOZERDADA:  'yogi',
     TOLLMAN:    'nitin',
+    CHANAKYA:   'amit',
+    LALUJI:     'lalu',
+    RAVISH:     'ravi',
+    DHRUV:      'dhruv',
     MBAPU:      'mbapu'
 };
 
-// face portrait in ./faces (used by the select screen)
+// face portrait in ./faces (used by the select screen & HUD)
 const CHAR_FACE = {
     MITRAMAN: 'modi', YATRABOY: 'rahul', DEEDEE: 'didi', TARIFFTAAU: 'trump',
-    DOZERDADA: 'yogi', TOLLMAN: 'nitin', MBAPU: 'mbapu'
+    DOZERDADA: 'yogi', TOLLMAN: 'nitin', CHANAKYA: 'amit', LALUJI: 'lalu',
+    RAVISH: 'ravi', DHRUV: 'dhruv', MBAPU: 'mbapu'
 };
 
-// clip -> [windup, impact, recovery] in seconds of clip time (original tables)
+// clip -> [windup, impact, recovery] in seconds of clip time
 const CLIP_TIME = {
     jab: [0.20, 0.56, 0.95], cross: [0.10, 0.37, 0.80], uppercut: [0.15, 0.47, 1.20],
     palm: [1.00, 1.40, 2.00], lowjab: [0.55, 0.90, 1.50], kick: [0.25, 0.67, 1.40],
@@ -100,6 +100,42 @@ const CHAR_CLIPS = {
             GRAB: 'jab_m', SP_PUNCH: 'quadpunch', SP_KICK: 'sidekick'
         }
     },
+    amit: {
+        stance: 'guardbounce', pace: 0.95,
+        superCharge: 'palm', superStrike: 'eightpunch',
+        moves: {
+            PUNCH_1: 'jab', PUNCH_2: 'cross', PUNCH_3: 'eightpunch',
+            KICK_1: 'pushkick', KICK_2: 'roundhouse', SWEEP: 'sweep360',
+            GRAB: 'palm', SP_PUNCH: 'bodypunch', SP_KICK: 'thrustkick'
+        }
+    },
+    lalu: {
+        stance: 'stance', pace: 0.9,
+        superCharge: 'twirl', superStrike: 'spinflip',
+        moves: {
+            PUNCH_1: 'longhook', PUNCH_2: 'uppercut', PUNCH_3: 'spinflip',
+            KICK_1: 'kick', KICK_2: 'crescent', SWEEP: 'sweep',
+            GRAB: 'palm', SP_PUNCH: 'hook', SP_KICK: 'flyingkick'
+        }
+    },
+    ravi: {
+        stance: 'guardbounce', pace: 1.05,
+        superCharge: 'palm', superStrike: 'crescent',
+        moves: {
+            PUNCH_1: 'jab', PUNCH_2: 'jabcross', PUNCH_3: 'palm',
+            KICK_1: 'frontkick', KICK_2: 'highkick', SWEEP: 'sweep',
+            GRAB: 'palm', SP_PUNCH: 'jabelbow', SP_KICK: 'sidekick'
+        }
+    },
+    dhruv: {
+        stance: 'guardbounce', pace: 1.25,
+        superCharge: 'twirl', superStrike: 'flipkick',
+        moves: {
+            PUNCH_1: 'jabcross', PUNCH_2: 'longhook', PUNCH_3: 'butterfly',
+            KICK_1: 'snapkick2', KICK_2: 'flipkick', SWEEP: 'sweep360',
+            GRAB: 'jab', SP_PUNCH: 'quadpunch', SP_KICK: 'flyingkick'
+        }
+    },
     mbapu: {
         stance: 'stance', pace: 1.0,
         superCharge: 'lotus', superStrike: 'armsup',
@@ -130,14 +166,12 @@ const MODEL_LOADER = (function () {
     };
 })();
 
-// small promise cache so p1 and p2 never download the same GLB twice
 const MODEL_CACHE = {};
 function loadCharacterModel(name, attempt) {
     if (MODEL_CACHE[name]) return MODEL_CACHE[name];
     const tries = (attempt || 0) + 1;
     const L = MODEL_LOADER();
     if (!L) return Promise.reject(new Error('GLTFLoader missing'));
-    // page opened straight from disk: browsers block GLB over file://
     MODEL_CACHE[name] = new Promise((resolve, reject) => {
         L.load('models/' + name + '.glb', resolve, (ev) => {
             if (!ev || !ev.total) return;
@@ -146,8 +180,6 @@ function loadCharacterModel(name, attempt) {
             }));
         }, reject);
     }).catch((err) => {
-        // a failed load must never poison the cache - otherwise the fighter is
-        // stuck on the placeholder rig for the rest of the session
         if (tries < 3) {
             delete MODEL_CACHE[name];
             return new Promise((r) => setTimeout(r, 400 * tries)).then(() => loadCharacterModel(name, tries));
