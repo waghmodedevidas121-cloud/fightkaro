@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * 1. AUTHENTIC SANSAD SHOWDOWN (FIGHTKARO.COM) ROSTER & MOVE DATA
+ * 1. AUTHENTIC SANSAD SHOWDOWN (FIGHTKARO) ROSTER & MOVE DATA (ALL 11 GLBs)
  * ============================================================================
  */
 const ROSTER = {
@@ -50,6 +50,38 @@ const ROSTER = {
         introLine: 'Toll bharo, aage badho!',
         superLine: 'Gaddha Blast! Express Highway!',
         sp1Name: 'TOLL TAX UPPERCUT', sp2Name: 'FLYOVER KICK', superName: 'GADDHA BLAST',
+        superDmg: 30
+    },
+    CHANAKYA: {
+        id: 'CHANAKYA', name: 'CHANAKYA', team: 'Team Strategist', hp: 105, dmgMult: 1.07, walkSpeed: 5.3,
+        color: 0xf59e0b, outfitColor: 0xf8fafc, beard: true, hairColor: 0x222222, icon: '♟️',
+        introLine: 'Aap chronology samajhiye!',
+        superLine: 'Masterstroke Checkmate!',
+        sp1Name: 'CHRONOLOGY PALM', sp2Name: 'ALLIANCE SWEEP', superName: 'MASTERSTROKE',
+        superDmg: 32
+    },
+    LALUJI: {
+        id: 'LALUJI', name: 'CHARA KING', team: 'Team Lantern', hp: 105, dmgMult: 1.04, walkSpeed: 5.6,
+        color: 0x22c55e, outfitColor: 0xffffff, hairColor: 0xe5e7eb, icon: '🏮',
+        introLine: 'Ekdam garda uda denge!',
+        superLine: 'Lantern Cyclone!',
+        sp1Name: 'GARDA UPPERCUT', sp2Name: 'RAILWAY EXPRESS', superName: 'LANTERN CYCLONE',
+        superDmg: 30
+    },
+    RAVISH: {
+        id: 'RAVISH', name: 'PRIME ANCHOR', team: 'Team PrimeTime', hp: 100, dmgMult: 1.02, walkSpeed: 6.0,
+        color: 0x38bdf8, outfitColor: 0x1e293b, hairColor: 0x111827, icon: '🎙️',
+        introLine: 'Namaskar, main Prime Anchor. Kaun jaat ho?',
+        superLine: 'Darr Ka Mahaul!',
+        sp1Name: 'MIC DROP JAB', sp2Name: 'SCREEN BLACKOUT', superName: 'DARR KA MAHAUL',
+        superDmg: 30
+    },
+    DHRUV: {
+        id: 'DHRUV', name: 'FACT CHECKER', team: 'Team Explainer', hp: 100, dmgMult: 1.00, walkSpeed: 6.5,
+        color: 0xa855f7, outfitColor: 0x111827, hairColor: 0x1f2937, icon: '📊',
+        introLine: 'Namaskar doston! Chaliye iska analysis karte hain!',
+        superLine: 'Algorithm Expose!',
+        sp1Name: 'DATA SLASH', sp2Name: 'TIMELINE KICK', superName: 'EXPLAINER BEAM',
         superDmg: 30
     },
     MBAPU: {

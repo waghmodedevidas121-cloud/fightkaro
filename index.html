@@ -1,99 +1,155 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-concept="concept-a">
 <head>
-<meta name="fk-build" content="bmwf6wq8h">
+<meta name="fk-build" content="bmwf7aaa1">
 <link rel="icon" href="data:,">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SANSAD SHOWDOWN // The Great Kursi Fight</title>
-<link rel="stylesheet" href="css/game.css?v=bmwf6wq8h">
+<title>FIGHTKARO // SANSAD SHOWDOWN — AAA Console Fighting</title>
+<link rel="stylesheet" href="css/game.css?v=bmwf7aaa1">
 </head>
 <body>
 <canvas id="game-canvas"></canvas>
 
 <!-- ============================================================
-     1. SATIRE NOTICE
+     1. SATIRE NOTICE (#disclaimer-screen, #accept-disclaimer)
      ============================================================ -->
 <div id="disclaimer-screen" class="modal-screen">
     <div class="satire-box">
-        <div class="title">Satire Notice / Vyangya Soochna</div>
-        <div class="game-title">SANSAD SHOWDOWN — The Great Kursi Fight</div>
-        <div class="game-subtitle">A fictional 3D political parody built for entertainment and humour under creative freedom.</div>
+        <div class="eyebrow" style="color:var(--brass);margin-bottom:8px;">PARODY &amp; SATIRE NOTICE // VYANGYA SOOCHNA</div>
+        <div class="title">FIGHTKARO — SANSAD SHOWDOWN</div>
+        <div class="game-subtitle">The Great Kursi Fight • 3D Political Satire Arena</div>
         <p class="body-text">
-            Kisi bhi kirader ka naam, samvaad ya special power kisi vaastvik vyakti ya neta ka
-            aadhikarik bayaan nahi hai. Kripya ise sirf manoranjan ke roop mein lijiye.
+            Kisi bhi kirdar ka naam, samvaad ya special power kisi vaastvik vyakti ya neta ka
+            aadhikarik bayaan nahi hai. Kripya ise sirf manoranjan aur comedy ke roop mein lijiye.
         </p>
-        <button class="btn btn-gold" id="accept-disclaimer">I Understand — Continue</button>
+        <button class="btn btn-gold" id="accept-disclaimer">I UNDERSTAND — ENTER THE AKHADA</button>
     </div>
 </div>
 
 <!-- ============================================================
-     2. BOOT
+     2. BOOT (#boot-screen)
      ============================================================ -->
 <div id="boot-screen" class="modal-screen">
     <div class="screen" style="align-items:center;justify-content:center;gap:0;">
         <div class="boot-mark">FIGHT<b>KARO</b></div>
-        <div class="boot-sub">Sansad Showdown</div>
+        <div class="boot-sub">SANSAD SHOWDOWN // AAA EDITION</div>
         <div class="boot-bar"><i id="boot-bar-fill"></i></div>
-        <div class="boot-hint" id="boot-hint">Engine shuru ho raha hai…</div>
+        <div class="boot-hint" id="boot-hint">3D Arena &amp; GLB Rigs taiyaar ho rahe hain…</div>
     </div>
 </div>
 
 <!-- ============================================================
-     3. MAIN MENU
+     3. MAIN MENU / HOME (#menu-screen)
      ============================================================ -->
 <div id="menu-screen" class="modal-screen">
-    <div class="menu-wrap">
-        <div class="brand-block">
-            <h1 class="brand-mark">FIGHT<b>KARO</b></h1>
-            <div class="brand-sub">Sansad Showdown</div>
+    <div class="screen" style="justify-content:space-between;gap:16px;">
+        <!-- Top AAA Command Strip -->
+        <div class="aaa-topbar">
+            <div class="brand-inline">
+                <span class="crest">FK</span>
+                <div>
+                    <div class="b-title">FIGHT<b>KARO</b> <span style="color:var(--brass)">//</span> SANSAD SHOWDOWN</div>
+                    <div class="b-sub" id="active-concept-label">CONCEPT A // AAA OBSIDIAN &amp; FORGED BRONZE</div>
+                </div>
+            </div>
 
-            <nav class="menu-nav">
-                <button class="menu-item is-focus" data-go="select">
-                    <span class="idx">01</span>
-                    <span class="label">Fight</span>
-                    <span class="meta">Kursi Match</span>
-                </button>
-                <button class="menu-item" data-go="profile">
-                    <span class="idx">02</span>
-                    <span class="label">Profile</span>
-                    <span class="meta">Record</span>
-                </button>
-                <button class="menu-item" data-go="moves">
-                    <span class="idx">03</span>
-                    <span class="label">How to Play</span>
-                    <span class="meta">Moves</span>
-                </button>
-                <button class="menu-item" data-go="settings">
-                    <span class="idx">04</span>
-                    <span class="label">Settings</span>
-                    <span class="meta">Audio · UI</span>
-                </button>
-            </nav>
+            <div class="concept-switcher">
+                <button class="c-btn active" data-concept-pick="concept-a">A: Obsidian</button>
+                <button class="c-btn" data-concept-pick="concept-b">B: Esports</button>
+                <button class="c-btn" data-concept-pick="concept-c">C: Cyber</button>
+                <button class="c-btn" data-concept-pick="concept-d">D: Minimal</button>
+            </div>
 
-            <div class="menu-foot">
-                <span id="menu-build">build</span>
-                <span>Enter / Click</span>
+            <div class="econ-pill">
+                <span>LVL <b id="ui-player-lvl" style="color:var(--brass-hi)">1</b></span>
+                <span class="sep"></span>
+                <span>KURSI <b id="ui-kursi-coins" style="color:var(--gold)">2,500</b></span>
+                <span class="sep"></span>
+                <span>VOTES <b id="ui-votes" style="color:var(--teal)">120</b></span>
             </div>
         </div>
 
-        <div class="menu-side">
-            <div class="roster-strip" id="menu-roster"></div>
-            <div class="record-card">
-                <div class="cell"><div class="k">Matches</div><div class="v" id="menu-matches">0</div></div>
-                <div class="cell"><div class="k">Wins</div><div class="v" id="menu-wins">0</div></div>
-                <div class="cell"><div class="k">Win Rate</div><div class="v" id="menu-rate">0<small>%</small></div></div>
+        <div class="menu-wrap">
+            <!-- Left Navigation & Quick Actions -->
+            <div class="brand-block">
+                <h1 class="brand-mark">THE GREAT <b>KURSI</b> FIGHT</h1>
+                <div class="brand-sub">11 Rigged 3D Netas • Custom Supers • Real Audio</div>
+
+                <nav class="menu-nav">
+                    <button class="menu-item is-focus" data-go="select">
+                        <span class="idx">01</span>
+                        <span class="label">Play Match</span>
+                        <span class="meta">11 Fighters</span>
+                    </button>
+                    <button class="menu-item" data-go="training">
+                        <span class="idx">02</span>
+                        <span class="label">Training Dojo</span>
+                        <span class="meta">Infinite Shakti</span>
+                    </button>
+                    <button class="menu-item" data-go="vault">
+                        <span class="idx">03</span>
+                        <span class="label">Vault &amp; Loadout</span>
+                        <span class="meta">Skins · 3D Props</span>
+                    </button>
+                    <button class="menu-item" data-go="bazaar">
+                        <span class="idx">04</span>
+                        <span class="label">Sansad Bazaar</span>
+                        <span class="meta">Unlock Gear</span>
+                    </button>
+                    <button class="menu-item" data-go="missions">
+                        <span class="idx">05</span>
+                        <span class="label">Missions</span>
+                        <span class="meta" id="menu-mission-badge">Daily Rewards</span>
+                    </button>
+                    <button class="menu-item" data-go="profile">
+                        <span class="idx">06</span>
+                        <span class="label">Career Profile</span>
+                        <span class="meta">Stats &amp; Record</span>
+                    </button>
+                    <button class="menu-item" data-go="moves">
+                        <span class="idx">07</span>
+                        <span class="label">How to Play</span>
+                        <span class="meta">Move List</span>
+                    </button>
+                    <button class="menu-item" data-go="settings">
+                        <span class="idx">08</span>
+                        <span class="label">Settings</span>
+                        <span class="meta">Audio · UI</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Right: Roster Preview + Live Career Telemetry -->
+            <div class="menu-side">
+                <div class="plate" style="padding:14px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <span class="eyebrow" style="color:var(--brass);">COMPLETE 11-FIGHTER 3D ROSTER</span>
+                        <button class="btn btn-gold" style="min-height:32px;padding:0 14px;font-size:11px;" data-go="select">Quick Fight →</button>
+                    </div>
+                    <div class="roster-strip" id="menu-roster"></div>
+                </div>
+
+                <div class="record-card">
+                    <div class="cell"><div class="k">Matches</div><div class="v" id="menu-matches">0</div></div>
+                    <div class="cell"><div class="k">Wins</div><div class="v" id="menu-wins">0</div></div>
+                    <div class="cell"><div class="k">Win Rate</div><div class="v" id="menu-rate">0<small>%</small></div></div>
+                </div>
+
+                <div class="menu-foot" style="margin-top:4px;">
+                    <span id="menu-build">bmwf7aaa1 · 3D GLB</span>
+                    <span>WASD + J/K/I/L • ESC Pause</span>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- ============================================================
-     4. CHARACTER SELECT
+     4. CHARACTER SELECT (#select-screen)
      ============================================================ -->
 <div id="select-screen" class="modal-screen">
     <div class="screen">
-
         <div class="select-top">
             <div class="pick-plate p1 is-active" id="plate-p1">
                 <div class="av"><img id="pick-p1-face" src="faces/modi.webp" alt=""></div>
@@ -111,7 +167,7 @@
 
             <div class="pick-plate p2" id="plate-p2">
                 <div>
-                    <div class="who">CPU</div>
+                    <div class="who">CPU Opponent</div>
                     <div class="nm" id="pick-p2-name">YATRA BOY</div>
                     <div class="tm" id="pick-p2-team">Team Yatra</div>
                 </div>
@@ -130,12 +186,13 @@
                         <div class="dp-team" id="detail-team">Team Vaada</div>
                     </div>
                 </div>
-                <div class="dp-super"><span class="eyebrow">Shakti</span><br><span id="detail-super">MITRA CHAKRA</span></div>
+                <div class="dp-super"><span class="eyebrow">Shakti Super</span><br><span id="detail-super">MITRA CHAKRA</span></div>
                 <div class="stat-row"><span class="sk">Damage</span><span class="sb"><i id="detail-dmg"></i></span><span class="sv" id="detail-dmg-v">108</span></div>
                 <div class="stat-row"><span class="sk">Speed</span><span class="sb"><i id="detail-spd"></i></span><span class="sv" id="detail-spd-v">55</span></div>
                 <div class="stat-row"><span class="sk">Health</span><span class="sb"><i id="detail-hp"></i></span><span class="sv" id="detail-hp-v">100</span></div>
-                <div class="eyebrow" style="margin-top:auto;">Special 1 · <span id="detail-sp1">DEMONETIZATION PALM</span></div>
-                <div class="eyebrow">Special 2 · <span id="detail-sp2">SURPRISE STRIKE</span></div>
+                <div class="eyebrow" style="margin-top:auto;">Special 1 · <span id="detail-sp1" style="color:var(--paper)">DEMONETIZATION PALM</span></div>
+                <div class="eyebrow">Special 2 · <span id="detail-sp2" style="color:var(--paper)">SURPRISE STRIKE</span></div>
+                <button class="btn btn-ghost" style="min-height:34px;font-size:11px;margin-top:4px;" data-go="vault">Customize Skin &amp; Prop</button>
             </aside>
         </div>
 
@@ -145,21 +202,20 @@
             <button class="stage-btn" data-stage="JANTAR">📢 Jantar Mantar</button>
             <button class="stage-btn" data-stage="SADAK">🛣️ Desi Sadak</button>
             <button class="stage-btn" id="toggle-pick-side">PICKING: P1</button>
+            <button class="stage-btn" data-back="menu">← Menu</button>
         </div>
 
         <div class="select-foot">
             <div class="hint">
-                Click a neta to pick for <b>P1</b>. The button on the right switches the pick to <b>CPU</b>.
-                Right-click a card to send it straight to the opponent.
+                Click a neta to pick for <b>P1</b>, or right-click to assign directly to <b>CPU</b>. All 11 <code>.glb</code> fighters are playable.
             </div>
-            <button class="btn btn-gold" id="start-fight-btn">Fight for the Kursi</button>
+            <button class="btn btn-gold" id="start-fight-btn">FIGHT FOR THE KURSI</button>
         </div>
-
     </div>
 </div>
 
 <!-- ============================================================
-     5. VS / BATTLE PREP
+     5. VS / BATTLE PREP (#vs-screen)
      ============================================================ -->
 <div id="vs-screen" class="modal-screen">
     <div class="screen" style="gap:0;">
@@ -180,14 +236,14 @@
             </div>
         </div>
         <div class="vs-load">
-            <div class="vl-k"><span id="vs-load-label">Loading fighters</span><span id="vs-load-pct">0%</span></div>
+            <div class="vl-k"><span id="vs-load-label">Loading 3D GLB Rigs</span><span id="vs-load-pct">0%</span></div>
             <div class="vl-bar"><i id="vs-load-bar"></i></div>
         </div>
     </div>
 </div>
 
 <!-- ============================================================
-     6. IN-GAME HUD
+     6. IN-GAME HUD (#hud)
      ============================================================ -->
 <div id="hud">
     <div class="hud-top">
@@ -246,11 +302,18 @@
         </div>
     </div>
 
+    <!-- Training Dojo Live Toolbar -->
+    <div id="training-toolbar" style="display:none;position:fixed;top:124px;left:50%;transform:translateX(-50%);z-index:25;gap:8px;pointer-events:auto;">
+        <button class="btn" style="min-height:32px;padding:0 12px;font-size:11px;" id="tr-fill-shakti">Fill Shakti (100%)</button>
+        <button class="btn" style="min-height:32px;padding:0 12px;font-size:11px;" id="tr-reset-pos">Reset Positions</button>
+        <button class="btn btn-danger" style="min-height:32px;padding:0 12px;font-size:11px;" id="tr-exit">Exit Dojo</button>
+    </div>
+
     <!-- MBAPU SHANTI ROUTE -->
     <div id="shanti-box">
-        <div class="shanti-title">Shanti Route</div>
+        <div class="shanti-title">Shanti Route: Stay Close &amp; Block 5 Hits</div>
         <div class="shanti-bar-bg"><div id="shanti-fill"></div></div>
-        <div id="shanti-blocks">BLOCKS 0</div>
+        <div id="shanti-blocks">BLOCKS 0/5</div>
     </div>
 
     <div id="p1-callout" class="move-callout">DEMONETIZATION PALM!</div>
@@ -321,7 +384,7 @@
 </div>
 
 <!-- ============================================================
-     7. PAUSE
+     7. PAUSE (#pause-screen)
      ============================================================ -->
 <div id="pause-screen" class="modal-screen">
     <div class="pause-panel">
@@ -341,13 +404,14 @@
 </div>
 
 <!-- ============================================================
-     8. RESULTS
+     8. RESULTS (#results-screen)
      ============================================================ -->
 <div id="results-screen" class="modal-screen">
     <div class="res-wrap">
         <div class="res-head">
             <div class="res-kicker" id="res-kicker">Match Complete</div>
             <h2 class="res-title"><span class="win-name" id="res-winner">MITRAMAN</span> WINS THE KURSI</h2>
+            <div id="res-reward-banner" style="margin-top:8px;font:700 13px/1 var(--font-display);letter-spacing:0.16em;color:var(--gold);">+350 KURSI COINS • +120 XP</div>
         </div>
 
         <div class="res-body">
@@ -381,14 +445,14 @@
 </div>
 
 <!-- ============================================================
-     9. SETTINGS
+     9. SETTINGS (#settings-screen)
      ============================================================ -->
 <div id="settings-screen" class="modal-screen">
     <div class="screen">
         <div class="screen-head">
             <div>
-                <h2 class="screen-title">Settings</h2>
-                <p class="screen-sub">Audio, on-screen controls and reading comfort. Everything saves on this device.</p>
+                <h2 class="screen-title">Settings &amp; Art Direction</h2>
+                <p class="screen-sub">Audio, on-screen controls, and AAA material themes saved automatically.</p>
             </div>
             <div class="head-actions"><button class="btn btn-ghost" data-back="menu">Back</button></div>
         </div>
@@ -412,7 +476,7 @@
             </section>
 
             <section class="set-group">
-                <h3>Interface</h3>
+                <h3>Interface &amp; Theme</h3>
                 <div class="set-row">
                     <div><div class="sr-k">Touch Buttons</div><div class="sr-d">Auto hides them on a laptop or desktop.</div></div>
                     <div class="sr-c seg" data-setting="touch">
@@ -439,13 +503,13 @@
 </div>
 
 <!-- ============================================================
-     10. PROFILE
+     10. PROFILE (#profile-screen)
      ============================================================ -->
 <div id="profile-screen" class="modal-screen">
     <div class="screen">
         <div class="screen-head">
             <div>
-                <h2 class="screen-title">Profile</h2>
+                <h2 class="screen-title">Career Profile</h2>
                 <p class="screen-sub">Aapka apna record — har match yahin likha jaata hai.</p>
             </div>
             <div class="head-actions"><button class="btn btn-ghost" data-back="menu">Back</button></div>
@@ -471,7 +535,7 @@
 
                 <div class="set-group" style="margin-top:14px;">
                     <h3>Neta Usage</h3>
-                    <div class="usage-list" id="prof-usage"></div>
+                    <div class="usage-list" id="prof-usage" style="padding:12px 14px;"></div>
                 </div>
             </div>
         </div>
@@ -479,14 +543,14 @@
 </div>
 
 <!-- ============================================================
-     11. HOW TO PLAY
+     11. HOW TO PLAY (#moves-screen)
      ============================================================ -->
 <div id="moves-screen" class="modal-screen">
     <div class="screen">
         <div class="screen-head">
             <div>
-                <h2 class="screen-title">How to Play</h2>
-                <p class="screen-sub">Laptop keys, the shakti meter and each neta's specials.</p>
+                <h2 class="screen-title">How to Play &amp; Frame Data</h2>
+                <p class="screen-sub">Laptop keys, Shakti meter rules, and specials for all 11 netas.</p>
             </div>
             <div class="head-actions"><button class="btn btn-ghost" data-back="menu">Back</button></div>
         </div>
@@ -494,13 +558,13 @@
         <div class="moves-grid">
             <section class="move-list">
                 <h3>Controls</h3>
-                <div class="mv"><span>Walk</span><kbd>← →</kbd></div>
+                <div class="mv"><span>Walk</span><kbd>← → / A D</kbd></div>
                 <div class="mv"><span>Jump</span><kbd>↑ / W</kbd></div>
                 <div class="mv"><span>Crouch</span><kbd>↓ / S</kbd></div>
                 <div class="mv"><span>Punch</span><kbd>J</kbd></div>
                 <div class="mv"><span>Kick</span><kbd>K</kbd></div>
                 <div class="mv"><span>Grab / throw</span><kbd>I</kbd></div>
-                <div class="mv"><span>Special 1</span><kbd>← + J</kbd></div>
+                <div class="mv"><span>Special 1</span><kbd>→ + J</kbd></div>
                 <div class="mv"><span>Special 2</span><kbd>→ + K</kbd></div>
                 <div class="mv"><span>Shakti super</span><kbd>L / Space</kbd></div>
                 <div class="mv"><span>Pause</span><kbd>Esc</kbd></div>
@@ -511,15 +575,83 @@
                 <div class="mv"><span>Best of three rounds</span><b>2 wins</b></div>
                 <div class="mv"><span>Round length</span><b>60 s</b></div>
                 <div class="mv"><span>Shakti meter fills by landing hits</span><b>100%</b></div>
-                <div class="mv"><span>Block by holding back</span><b>chip damage</b></div>
+                <div class="mv"><span>Block by holding back</span><b>15% chip dmg</b></div>
                 <div class="mv"><span>MBAPU can be beaten without a punch</span><b>Shanti Route</b></div>
             </section>
 
             <section class="move-list">
-                <h3>Neta Specials</h3>
+                <h3>All 11 Neta Specials</h3>
                 <div id="moves-roster"></div>
             </section>
         </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     12. VAULT & 3D LOADOUT (#vault-screen)
+     ============================================================ -->
+<div id="vault-screen" class="modal-screen">
+    <div class="screen">
+        <div class="screen-head">
+            <div>
+                <h2 class="screen-title">Vault &amp; 3D Loadout</h2>
+                <p class="screen-sub">Equip unlocked 3D GLB material finishes and override your Super Weapon Prop.</p>
+            </div>
+            <div class="head-actions">
+                <button class="btn" data-go="bazaar">Open Bazaar</button>
+                <button class="btn btn-ghost" data-back="menu">Back</button>
+            </div>
+        </div>
+
+        <div class="settings-grid">
+            <section class="set-group">
+                <h3>3D Fighter Material Finish (Applies to GLB)</h3>
+                <div id="vault-skins-list" class="p-3" style="padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
+            </section>
+
+            <section class="set-group">
+                <h3>Equipped 3D Super Prop Rig</h3>
+                <div id="vault-props-list" class="p-3" style="padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     13. SANSAD BAZAAR / SHOP (#bazaar-screen)
+     ============================================================ -->
+<div id="bazaar-screen" class="modal-screen">
+    <div class="screen">
+        <div class="screen-head">
+            <div>
+                <h2 class="screen-title">Sansad Bazaar</h2>
+                <p class="screen-sub">Spend Kursi Coins earned from matches &amp; missions to unlock custom 3D skins and props.</p>
+            </div>
+            <div class="head-actions">
+                <span class="econ-pill">BALANCE: <b id="bazaar-coins" style="color:var(--gold)">2,500</b> KURSI</span>
+                <button class="btn" data-go="vault">Vault</button>
+                <button class="btn btn-ghost" data-back="menu">Back</button>
+            </div>
+        </div>
+
+        <div id="bazaar-items-grid" class="settings-grid"></div>
+    </div>
+</div>
+
+<!-- ============================================================
+     14. MISSIONS (#missions-screen)
+     ============================================================ -->
+<div id="missions-screen" class="modal-screen">
+    <div class="screen">
+        <div class="screen-head">
+            <div>
+                <h2 class="screen-title">Parliamentary Directives</h2>
+                <p class="screen-sub">Complete combat objectives to claim Kursi Coins and Season XP.</p>
+            </div>
+            <div class="head-actions"><button class="btn btn-ghost" data-back="menu">Back</button></div>
+        </div>
+
+        <div id="missions-list" class="settings-grid"></div>
     </div>
 </div>
 
@@ -527,7 +659,7 @@
 <div id="news-ticker" class="ticker-wrap">
     <div class="ticker-badge">Breaking</div>
     <div id="ticker-text">
-        🔥 SANSAD SHOWDOWN LIVE: KURSI KE LIYE MAHA-YUDH SHURU! &nbsp;&bull;&nbsp; MITRAMAN KA MITRA CHAKRA TAYYAR! &nbsp;&bull;&nbsp; YATRA BOY NE LAGAYA ALOO SE SONA MACHINE! &nbsp;&bull;&nbsp; DEEDEE BOLE: KHELA HOBE, JADU HOBE! &nbsp;&bull;&nbsp; TARIFF TAAU NE SAB PE 200% TARIFF THOKA! &nbsp;&bull;&nbsp; DOZER DADA KA BULLDOZER ARENA MEIN GHUSA!
+        🔥 SANSAD SHOWDOWN AAA EDITION LIVE: ALL 11 3D GLB NETAS UNLOCKED! &nbsp;&bull;&nbsp; MITRAMAN KA MITRA CHAKRA TAYYAR! &nbsp;&bull;&nbsp; CHANAKYA CHRONOLOGY MASTERSTROKE ACTIVE! &nbsp;&bull;&nbsp; CHARA KING &amp; PRIME ANCHOR ENTER THE ARENA! &nbsp;&bull;&nbsp; FACT CHECKER EXPLAINER BEAM ONLINE!
     </div>
 </div>
 
@@ -539,24 +671,24 @@
 <div id="noserver" role="alert" hidden>
     <div class="ns-head">3D Models Not Loading</div>
     <p class="ns-body">
-        Browser <code>models/*.glb</code> fetch nahi kar paya, isliye fighters load nahi hue.
+        Browser <code>models/*.glb</code> fetch nahi kar paya. <b>Start FightKaro.bat</b> chalao.
         <span id="noserver-hint"></span>
     </p>
     <button id="noserver-close" type="button">Samajh Gaya</button>
 </div>
 
-<script src="js/vendor/three.min.js?v=bmwf6wq8h"></script>
-<script src="js/vendor/GLTFLoader.js?v=bmwf6wq8h"></script>
-<script src="js/vendor/DRACOLoader.js?v=bmwf6wq8h"></script>
-<script src="js/data.js?v=bmwf6wq8h"></script>
-<script src="js/clips.js?v=bmwf6wq8h"></script>
-<script src="js/audio.js?v=bmwf6wq8h"></script>
-<script src="js/vfx.js?v=bmwf6wq8h"></script>
-<script src="js/props.js?v=bmwf6wq8h"></script>
-<script src="js/rig.js?v=bmwf6wq8h"></script>
-<script src="js/fighter.js?v=bmwf6wq8h"></script>
-<script src="js/engine.js?v=bmwf6wq8h"></script>
-<script src="js/main.js?v=bmwf6wq8h"></script>
-<script src="js/screens.js?v=bmwf6wq8h"></script>
+<script src="js/vendor/three.min.js?v=bmwf7aaa1"></script>
+<script src="js/vendor/GLTFLoader.js?v=bmwf7aaa1"></script>
+<script src="js/vendor/DRACOLoader.js?v=bmwf7aaa1"></script>
+<script src="js/data.js?v=bmwf7aaa1"></script>
+<script src="js/clips.js?v=bmwf7aaa1"></script>
+<script src="js/audio.js?v=bmwf7aaa1"></script>
+<script src="js/vfx.js?v=bmwf7aaa1"></script>
+<script src="js/props.js?v=bmwf7aaa1"></script>
+<script src="js/rig.js?v=bmwf7aaa1"></script>
+<script src="js/fighter.js?v=bmwf7aaa1"></script>
+<script src="js/engine.js?v=bmwf7aaa1"></script>
+<script src="js/main.js?v=bmwf7aaa1"></script>
+<script src="js/screens.js?v=bmwf7aaa1"></script>
 </body>
 </html>
