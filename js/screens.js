@@ -1,10 +1,6 @@
 /**
  * ============================================================================
- * FIGHTKARO — UI v3 SCREEN CONTROLLER
- * ----------------------------------------------------------------------------
- * Owns navigation, the VS/prep loading gate, pause, results and the profile.
- * Gameplay, combat and audio stay in engine.js / audio.js — this file only
- * reads their state and never mutates the fight rules.
+ * FIGHTKARO — AAA UI SCREEN CONTROLLER (11 Fighters + Vault + Bazaar + Missions + Training)
  * ============================================================================
  */
 (function () {
@@ -16,9 +12,11 @@
     const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
     /* ------------------------------------------------------------------
-       career profile (persisted)
+       career profile & economy (persisted)
        ------------------------------------------------------------------ */
     const PROFILE_KEY = 'fk.profile';
+    const ECON_KEY = 'fk.economy.v1';
+
     const blankProfile = () => ({
         matches: 0, wins: 0, losses: 0,
         supers: 0, bestCombo: 0, longest: 0,
@@ -26,11 +24,86 @@
     });
     let profile = blankProfile();
     function loadProfile() {
-        try { Object.assign(profile, JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}')); } catch (e) { /* fresh save */ }
+        try { Object.assign(profile, JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}')); } catch (e) {}
         if (!profile.usage) profile.usage = {};
     }
     loadProfile();
     const saveProfile = () => { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {} };
+
+    const SKINS_CATALOG = [
+        { id: 'DEFAULT', name: 'Standard Sansad Attire', desc: 'Original WebP textures from GLB rig.', price: 0, hex: null, badge: 'DEFAULT' },
+        { id: 'BRONZE', name: 'Forged Bronze Armor', desc: 'Warm metallic bronze-gold shader tint on GLB.', price: 800, hex: 0xf0c975, badge: 'RARE' },
+        { id: 'EMERALD', name: 'Lok Sabha Emerald', desc: 'Deep emerald diplomatic finish.', price: 1200, hex: 0x6ee7b7, badge: 'EPIC' },
+        { id: 'CRIMSON', name: 'Akhada Crimson Fury', desc: 'Battle-hardened crimson aura tint.', price: 1800, hex: 0xfca5a5, badge: 'LEGENDARY' }
+    ];
+
+    const PROPS_CATALOG = [
+        { id: 'DEFAULT', name: 'Signature Neta Super Prop', desc: 'Uses each fighter\'s native 3D Super Rig.', price: 0, badge: 'NATIVE' },
+        { id: 'CHAKRA', name: 'Mitra Chakra Rig', desc: 'Hurls the spinning Golden Chakra in any Super.', price: 1000, badge: '3D PROP' },
+        { id: 'ALOO', name: 'Aloo-Se-Sona Converter', desc: 'Transmutes opponent into Gold Bars.', price: 1400, badge: '3D PROP' },
+        { id: 'CAULDRON', name: 'Jadu Hobe Cauldron', desc: 'Turns opponent into a hopping Frog.', price: 1400, badge: '3D PROP' },
+        { id: 'STAMP', name: '200% Tariff Gold Stamp', desc: 'Drops the colossal Golden Stamp.', price: 1600, badge: '3D PROP' }
+    ];
+
+    const MISSIONS_CATALOG = [
+        { id: 'm_first_win', title: 'Pehli Kursi Victory', desc: 'Win 1 match in Sansad Showdown.', reward: 500, check: (p) => p.wins >= 1 },
+        { id: 'm_combo_3', title: 'Parliamentary Combo', desc: 'Land a 3+ hit combo in battle.', reward: 400, check: (p) => p.bestCombo >= 3 },
+        { id: 'm_super_2', title: 'Shakti Overdrive', desc: 'Unleash 2 Shakti Super attacks.', reward: 600, check: (p) => p.supers >= 2 },
+        { id: 'm_veteran', title: 'Lok Sabha Veteran', desc: 'Complete 5 total matches.', reward: 1000, check: (p) => p.matches >= 5 }
+    ];
+
+    let econ = {
+        coins: 2500,
+        votes: 120,
+        xp: 450,
+        unlockedSkins: ['DEFAULT', 'BRONZE'],
+        equippedSkin: 'DEFAULT',
+        unlockedProps: ['DEFAULT'],
+        equippedProp: 'DEFAULT',
+        claimedMissions: [],
+        concept: 'concept-a'
+    };
+
+    function loadEcon() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(ECON_KEY) || '{}');
+            Object.assign(econ, saved);
+            if (!Array.isArray(econ.unlockedSkins)) econ.unlockedSkins = ['DEFAULT', 'BRONZE'];
+            if (!Array.isArray(econ.unlockedProps)) econ.unlockedProps = ['DEFAULT'];
+            if (!Array.isArray(econ.claimedMissions)) econ.claimedMissions = [];
+        } catch (e) {}
+    }
+    loadEcon();
+    const saveEcon = () => { try { localStorage.setItem(ECON_KEY, JSON.stringify(econ)); } catch (e) {} };
+
+    function syncEconHeader() {
+        const lvl = 1 + Math.floor((econ.xp || 0) / 500);
+        if ($('ui-player-lvl')) $('ui-player-lvl').textContent = String(lvl);
+        if ($('ui-kursi-coins')) $('ui-kursi-coins').textContent = econ.coins.toLocaleString();
+        if ($('ui-votes')) $('ui-votes').textContent = String(econ.votes);
+        if ($('bazaar-coins')) $('bazaar-coins').textContent = econ.coins.toLocaleString();
+    }
+
+    function applyConcept(conceptId) {
+        econ.concept = conceptId;
+        document.documentElement.setAttribute('data-concept', conceptId);
+        const labels = {
+            'concept-a': 'CONCEPT A // AAA OBSIDIAN & FORGED BRONZE',
+            'concept-b': 'CONCEPT B // ESPORTS TOURNAMENT BROADCAST',
+            'concept-c': 'CONCEPT C // CYBERPUNK TACTICAL HOLOGRAM',
+            'concept-d': 'CONCEPT D // ARCHITECTURAL MINIMAL COMBAT'
+        };
+        if ($('active-concept-label')) $('active-concept-label').textContent = labels[conceptId] || labels['concept-a'];
+        $$('.c-btn').forEach((b) => b.classList.toggle('active', b.getAttribute('data-concept-pick') === conceptId));
+        saveEcon();
+    }
+    applyConcept(econ.concept || 'concept-a');
+
+    function applyEquippedLoadout(g) {
+        if (!g || !g.p1) return;
+        const skin = SKINS_CATALOG.find((s) => s.id === econ.equippedSkin) || SKINS_CATALOG[0];
+        if (typeof g.p1.setSkinTint === 'function') g.p1.setSkinTint(skin.hex);
+    }
 
     const mainId = () => {
         const keys = Object.keys(profile.usage);
@@ -43,7 +116,8 @@
        ------------------------------------------------------------------ */
     const SCREENS = [
         'disclaimer-screen', 'boot-screen', 'menu-screen', 'select-screen', 'vs-screen',
-        'pause-screen', 'results-screen', 'settings-screen', 'profile-screen', 'moves-screen'
+        'pause-screen', 'results-screen', 'settings-screen', 'profile-screen', 'moves-screen',
+        'vault-screen', 'bazaar-screen', 'missions-screen'
     ];
 
     let current = 'disclaimer-screen';
@@ -57,17 +131,17 @@
         current = id;
         const hud = $('hud');
         if (hud && id !== 'select-screen' && id !== 'pause-screen') {
-            // the HUD belongs to the fight only; keep it out of every menu
-            if (id === 'menu-screen' || id === 'results-screen' || id === 'settings-screen' ||
-                id === 'profile-screen' || id === 'moves-screen' || id === 'boot-screen' || id === 'disclaimer-screen') {
-                hud.classList.remove('on');
-            }
+            if (id !== 'hud') hud.classList.remove('on');
         }
+        syncEconHeader();
         if (id === 'menu-screen') renderMenu();
         if (id === 'profile-screen') renderProfile();
         if (id === 'moves-screen') renderMoves();
         if (id === 'settings-screen') syncSettings();
         if (id === 'select-screen') syncPicks();
+        if (id === 'vault-screen') renderVault();
+        if (id === 'bazaar-screen') renderBazaar();
+        if (id === 'missions-screen') renderMissions();
     }
     const hide = (id) => { const el = $(id); if (el) el.style.display = 'none'; };
 
@@ -79,10 +153,10 @@
         const fill = $('boot-bar-fill');
         const hint = $('boot-hint');
         const steps = [
-            [18, 'Engine taiyaar ho raha hai…'],
-            [42, 'Arena ban raha hai…'],
-            [68, 'Audio bank load ho raha hai…'],
-            [88, 'Fighters taiyaar…']
+            [22, 'ACESFilmic 3D Renderer taiyaar…'],
+            [48, 'Sansad Bhavan Arena & Lighting…'],
+            [74, 'Real Audio Bank load ho raha hai…'],
+            [94, '11 GLB Netas ready…']
         ];
         let i = 0;
         const tick = setInterval(() => {
@@ -95,8 +169,8 @@
             clearInterval(tick);
             if (fill) fill.style.width = '100%';
             if (hint) hint.textContent = 'Ready';
-            setTimeout(done, 260);
-        }, 130);
+            setTimeout(done, 240);
+        }, 120);
     }
 
     /* ------------------------------------------------------------------
@@ -104,10 +178,11 @@
        ------------------------------------------------------------------ */
     function renderMenu() {
         loadProfile();
+        syncEconHeader();
         const strip = $('menu-roster');
         if (strip && !strip.childElementCount && typeof ROSTER !== 'undefined') {
-            strip.innerHTML = Object.values(ROSTER).slice(0, 8).map((c) => (
-                '<div class="face"><img src="' + faceOf(c.id) + '" alt=""><span>' + c.name + '</span></div>'
+            strip.innerHTML = Object.values(ROSTER).map((c) => (
+                '<div class="face" data-quick-pick="' + c.id + '"><img src="' + faceOf(c.id) + '" alt=""><span>' + c.name + '</span></div>'
             )).join('');
         }
         const rate = profile.matches ? Math.round((profile.wins / profile.matches) * 100) : 0;
@@ -118,7 +193,7 @@
         const build = $('menu-build');
         if (build) {
             const meta = document.querySelector('meta[name="fk-build"]');
-            build.textContent = (meta ? meta.content : 'local') + ' · 1.0';
+            build.textContent = (meta ? meta.content : 'local') + ' · 11 GLBs';
         }
     }
 
@@ -151,7 +226,6 @@
         $('plate-p1').classList.toggle('is-active', g.pickingFor === 'P1');
         $('plate-p2').classList.toggle('is-active', g.pickingFor === 'P2');
 
-        // detail panel always mirrors the fighter being picked
         const d = g.pickingFor === 'P2' ? p2 : p1;
         set('detail-name', d.name);
         set('detail-team', d.team);
@@ -170,37 +244,108 @@
         bar('detail-spd', spd);
         bar('detail-hp', d.hp || 100);
 
-        // the engine owns the card highlight, this only re-syncs the plates
         const side = $('toggle-pick-side');
         if (side) side.textContent = 'PICKING: ' + (g.pickingFor || 'P1');
     }
 
-    document.addEventListener('click', (e) => {
-        const card = e.target.closest('.char-card');
-        if (card && card.id) {
-            requestAnimationFrame(() => {
-                syncPicks();
-                const id = card.id.replace(/^card-/, '');
-                if (typeof loadCharacterModel === 'function' && CHAR_MODEL[id]) {
-                    loadCharacterModel(CHAR_MODEL[id]).catch(() => {});
-                }
-            });
+    /* ------------------------------------------------------------------
+       vault, bazaar, missions rendering
+       ------------------------------------------------------------------ */
+    function renderVault() {
+        const sList = $('vault-skins-list');
+        if (sList) {
+            sList.innerHTML = SKINS_CATALOG.map((s) => {
+                const owned = econ.unlockedSkins.includes(s.id);
+                const eq = econ.equippedSkin === s.id;
+                return `<div class="set-row">
+                    <div><div class="sr-k">${s.name} <span style="color:var(--brass);font-size:9px;">[${s.badge}]</span></div><div class="sr-d">${s.desc}</div></div>
+                    <div>${eq
+                        ? '<button class="btn btn-gold" style="min-height:32px;padding:0 12px;font-size:10px;" disabled>EQUIPPED</button>'
+                        : owned
+                            ? `<button class="btn" style="min-height:32px;padding:0 12px;font-size:10px;" data-equip-skin="${s.id}">EQUIP</button>`
+                            : `<button class="btn btn-ghost" style="min-height:32px;padding:0 12px;font-size:10px;" data-go="bazaar">LOCKED (${s.price})</button>`
+                    }</div>
+                </div>`;
+            }).join('');
         }
-        if (e.target.closest('#toggle-pick-side')) requestAnimationFrame(syncPicks);
-    }, false);
 
-    document.addEventListener('contextmenu', (e) => {
-        const card = e.target.closest('.char-card');
-        if (!card || !card.id || !window.game) return;
-        e.preventDefault();
-        const g = window.game;
-        g.p2Choice = card.id.replace(/^card-/, '');
-        if (typeof g.refreshRosterCards === 'function') g.refreshRosterCards();
-        syncPicks();
-    }, false);
+        const pList = $('vault-props-list');
+        if (pList) {
+            pList.innerHTML = PROPS_CATALOG.map((p) => {
+                const owned = econ.unlockedProps.includes(p.id);
+                const eq = econ.equippedProp === p.id;
+                return `<div class="set-row">
+                    <div><div class="sr-k">${p.name} <span style="color:var(--teal);font-size:9px;">[${p.badge}]</span></div><div class="sr-d">${p.desc}</div></div>
+                    <div>${eq
+                        ? '<button class="btn btn-gold" style="min-height:32px;padding:0 12px;font-size:10px;" disabled>EQUIPPED</button>'
+                        : owned
+                            ? `<button class="btn" style="min-height:32px;padding:0 12px;font-size:10px;" data-equip-prop="${p.id}">EQUIP</button>`
+                            : `<button class="btn btn-ghost" style="min-height:32px;padding:0 12px;font-size:10px;" data-go="bazaar">LOCKED (${p.price})</button>`
+                    }</div>
+                </div>`;
+            }).join('');
+        }
+    }
+
+    function renderBazaar() {
+        syncEconHeader();
+        const grid = $('bazaar-items-grid');
+        if (!grid) return;
+        const skinCards = SKINS_CATALOG.filter((s) => s.price > 0).map((s) => {
+            const owned = econ.unlockedSkins.includes(s.id);
+            return `<section class="set-group">
+                <h3>3D GLB SHADER SKIN · ${s.badge}</h3>
+                <div class="set-row">
+                    <div><div class="sr-k">${s.name}</div><div class="sr-d">${s.desc}</div></div>
+                    <div>${owned
+                        ? '<span class="eyebrow" style="color:var(--green)">OWNED</span>'
+                        : `<button class="btn btn-gold" style="min-height:34px;padding:0 14px;font-size:11px;" data-buy-skin="${s.id}">BUY · ${s.price} KURSI</button>`
+                    }</div>
+                </div>
+            </section>`;
+        }).join('');
+
+        const propCards = PROPS_CATALOG.filter((p) => p.price > 0).map((p) => {
+            const owned = econ.unlockedProps.includes(p.id);
+            return `<section class="set-group">
+                <h3>3D SUPER PROP RIG · ${p.badge}</h3>
+                <div class="set-row">
+                    <div><div class="sr-k">${p.name}</div><div class="sr-d">${p.desc}</div></div>
+                    <div>${owned
+                        ? '<span class="eyebrow" style="color:var(--green)">OWNED</span>'
+                        : `<button class="btn btn-gold" style="min-height:34px;padding:0 14px;font-size:11px;" data-buy-prop="${p.id}">BUY · ${p.price} KURSI</button>`
+                    }</div>
+                </div>
+            </section>`;
+        }).join('');
+
+        grid.innerHTML = skinCards + propCards;
+    }
+
+    function renderMissions() {
+        loadProfile();
+        const list = $('missions-list');
+        if (!list) return;
+        list.innerHTML = MISSIONS_CATALOG.map((m) => {
+            const done = m.check(profile);
+            const claimed = econ.claimedMissions.includes(m.id);
+            return `<section class="set-group">
+                <h3>REWARD: +${m.reward} KURSI COINS</h3>
+                <div class="set-row">
+                    <div><div class="sr-k">${m.title}</div><div class="sr-d">${m.desc}</div></div>
+                    <div>${claimed
+                        ? '<span class="eyebrow" style="color:var(--paper-mute)">CLAIMED</span>'
+                        : done
+                            ? `<button class="btn btn-gold" style="min-height:34px;padding:0 14px;font-size:11px;" data-claim-mission="${m.id}">CLAIM +${m.reward}</button>`
+                            : '<span class="eyebrow" style="color:var(--brass)">IN PROGRESS</span>'
+                    }</div>
+                </div>
+            </section>`;
+        }).join('');
+    }
 
     /* ------------------------------------------------------------------
-       VS / battle prep gate
+       VS / battle prep gate & Training Dojo launch
        ------------------------------------------------------------------ */
     let busy = false;
 
@@ -213,7 +358,8 @@
         });
     }
 
-    function startFight() {
+    function startFight(opts) {
+        opts = opts || {};
         const g = window.game;
         if (!g || busy) return;
         busy = true;
@@ -224,9 +370,9 @@
         const set = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
         const img = (id, idn) => { const el = $(id); if (el) el.src = faceOf(idn); };
         set('vs-p1-name', p1.name); set('vs-p1-team', p1.team); img('vs-p1-face', p1.id);
-        set('vs-p2-name', p2.name); set('vs-p2-team', p2.team); img('vs-p2-face', p2.id);
+        set('vs-p2-name', p2.name); set('vs-p2-team', opts.training ? 'Training Dummy' : p2.team); img('vs-p2-face', p2.id);
         const stageNames = { SANSAD: 'Sansad Bhavan', JANTAR: 'Jantar Mantar', SADAK: 'Desi Sadak' };
-        set('vs-stage', stageNames[g.stageChoice] || 'Sansad Bhavan');
+        set('vs-stage', opts.training ? 'Training Dojo' : (stageNames[g.stageChoice] || 'Sansad Bhavan'));
 
         const bar = $('vs-load-bar');
         const pctEl = $('vs-load-pct');
@@ -249,43 +395,177 @@
         const launch = () => {
             hide('vs-screen');
             resetMatchStats();
-            g.startFullMatch();
+            g.startFullMatch({ training: !!opts.training });
             $('hud').classList.add('on');
+            current = 'hud';
             busy = false;
         };
 
-        if (!jobs.length) { paint(1); setTimeout(launch, 340); return; }
+        if (!jobs.length) { paint(1); setTimeout(launch, 300); return; }
         loadProgress(jobs, paint);
         Promise.race([
             Promise.all(jobs.map((j) => j.catch(() => null))),
-            new Promise((r) => setTimeout(r, 12000))   // never trap the player behind a slow link
-        ]).then(() => setTimeout(launch, 380));
+            new Promise((r) => setTimeout(r, 12000))
+        ]).then(() => setTimeout(launch, 340));
     }
 
     document.addEventListener('click', (e) => {
+        const conceptBtn = e.target.closest('[data-concept-pick]');
+        if (conceptBtn) {
+            applyConcept(conceptBtn.getAttribute('data-concept-pick'));
+            try { sfx.uiTap(); } catch (err) {}
+            return;
+        }
+
+        const quickPick = e.target.closest('[data-quick-pick]');
+        if (quickPick && window.game) {
+            window.game.p1Choice = quickPick.getAttribute('data-quick-pick');
+            if (typeof window.game.refreshRosterCards === 'function') window.game.refreshRosterCards();
+            show('select-screen');
+            return;
+        }
+
+        const card = e.target.closest('.char-card');
+        if (card && card.id) {
+            requestAnimationFrame(() => {
+                syncPicks();
+                const id = card.id.replace(/^card-/, '');
+                if (typeof loadCharacterModel === 'function' && CHAR_MODEL[id]) {
+                    loadCharacterModel(CHAR_MODEL[id]).catch(() => {});
+                }
+            });
+        }
+        if (e.target.closest('#toggle-pick-side')) requestAnimationFrame(syncPicks);
+
         if (e.target.closest('#start-fight-btn')) {
             e.stopPropagation();
             e.preventDefault();
             startFight();
+            return;
         }
+
+        const buySkin = e.target.closest('[data-buy-skin]');
+        if (buySkin) {
+            const id = buySkin.getAttribute('data-buy-skin');
+            const item = SKINS_CATALOG.find((s) => s.id === id);
+            if (item && econ.coins >= item.price && !econ.unlockedSkins.includes(id)) {
+                econ.coins -= item.price;
+                econ.unlockedSkins.push(id);
+                econ.equippedSkin = id;
+                saveEcon();
+                try { sfx.play('kaching'); } catch (err) {}
+                renderBazaar();
+            }
+            return;
+        }
+
+        const buyProp = e.target.closest('[data-buy-prop]');
+        if (buyProp) {
+            const id = buyProp.getAttribute('data-buy-prop');
+            const item = PROPS_CATALOG.find((p) => p.id === id);
+            if (item && econ.coins >= item.price && !econ.unlockedProps.includes(id)) {
+                econ.coins -= item.price;
+                econ.unlockedProps.push(id);
+                econ.equippedProp = id;
+                saveEcon();
+                try { sfx.play('kaching'); } catch (err) {}
+                renderBazaar();
+            }
+            return;
+        }
+
+        const eqSkin = e.target.closest('[data-equip-skin]');
+        if (eqSkin) {
+            econ.equippedSkin = eqSkin.getAttribute('data-equip-skin');
+            saveEcon();
+            try { sfx.uiConfirm(); } catch (err) {}
+            renderVault();
+            return;
+        }
+
+        const eqProp = e.target.closest('[data-equip-prop]');
+        if (eqProp) {
+            econ.equippedProp = eqProp.getAttribute('data-equip-prop');
+            saveEcon();
+            try { sfx.uiConfirm(); } catch (err) {}
+            renderVault();
+            return;
+        }
+
+        const claimBtn = e.target.closest('[data-claim-mission]');
+        if (claimBtn) {
+            const id = claimBtn.getAttribute('data-claim-mission');
+            const m = MISSIONS_CATALOG.find((x) => x.id === id);
+            if (m && !econ.claimedMissions.includes(id)) {
+                econ.claimedMissions.push(id);
+                econ.coins += m.reward;
+                econ.xp += 150;
+                saveEcon();
+                try { sfx.play('coins'); } catch (err) {}
+                syncEconHeader();
+                renderMissions();
+            }
+            return;
+        }
+
+        // Training Toolbar actions
+        if (e.target.closest('#tr-fill-shakti') && window.game) {
+            window.game.p1.shakti = 100;
+            window.game.updateHUD();
+            try { sfx.play('super_charge'); } catch (err) {}
+            return;
+        }
+        if (e.target.closest('#tr-reset-pos') && window.game) {
+            window.game.p1.root.position.set(-2.4, 0, 0);
+            window.game.p2.root.position.set(2.4, 0, 0);
+            window.game.p2.hp = window.game.p2.maxHp;
+            window.game.updateHUD();
+            return;
+        }
+        if (e.target.closest('#tr-exit') && window.game) {
+            window.game.trainingMode = false;
+            window.game.matchActive = false;
+            $('hud').classList.remove('on');
+            show('menu-screen');
+            return;
+        }
+
         const res = e.target.closest('[data-res]');
         if (res) {
             const what = res.getAttribute('data-res');
             if (what === 'rematch') { hide('results-screen'); startFight(); }
             if (what === 'select') { hide('results-screen'); show('select-screen'); }
             if (what === 'menu') { hide('results-screen'); $('hud').classList.remove('on'); show('menu-screen'); }
+            return;
         }
+
         const go = e.target.closest('[data-go]');
         if (go) {
             const target = go.getAttribute('data-go');
-            if (target === 'select') { show('select-screen'); }
+            if (target === 'training') { startFight({ training: true }); return; }
+            if (target === 'select') show('select-screen');
             else if (target === 'profile') show('profile-screen');
             else if (target === 'moves') show('moves-screen');
+            else if (target === 'vault') show('vault-screen');
+            else if (target === 'bazaar') show('bazaar-screen');
+            else if (target === 'missions') show('missions-screen');
             else if (target === 'settings') { backTarget = 'menu-screen'; show('settings-screen'); }
+            return;
         }
+
         const back = e.target.closest('[data-back]');
         if (back) show(back.getAttribute('data-back') + '-screen');
     }, true);
+
+    document.addEventListener('contextmenu', (e) => {
+        const card = e.target.closest('.char-card');
+        if (!card || !card.id || !window.game) return;
+        e.preventDefault();
+        const g = window.game;
+        g.p2Choice = card.id.replace(/^card-/, '');
+        if (typeof g.refreshRosterCards === 'function') g.refreshRosterCards();
+        syncPicks();
+    }, false);
 
     /* ------------------------------------------------------------------
        pause
@@ -298,7 +578,7 @@
         pausedFrom = !!g.matchActive;
         g.matchActive = false;
         try { if (sfx.music) sfx.music.volume = Math.min(sfx.music.volume, 0.08); } catch (e) {}
-        const r = $('pause-round'); if (r) r.textContent = 'ROUND ' + (g.round || 1);
+        const r = $('pause-round'); if (r) r.textContent = g.trainingMode ? 'TRAINING DOJO' : ('ROUND ' + (g.round || 1));
         const s = $('pause-score'); if (s) s.textContent = (g.p1Wins || 0) + ' — ' + (g.p2Wins || 0);
         show('pause-screen');
     }
@@ -322,13 +602,14 @@
             current = 'hud';
             pausedFrom = false;
             resetMatchStats();
-            window.game.startFullMatch();
+            window.game.startFullMatch({ training: window.game.trainingMode });
         }
         if (what === 'settings') { backTarget = 'pause-screen'; hide('pause-screen'); show('settings-screen'); }
         if (what === 'quit') {
             hide('pause-screen');
             current = 'menu-screen';
             pausedFrom = false;
+            if (window.game) { window.game.trainingMode = false; window.game.matchActive = false; }
             $('hud').classList.remove('on');
             show('menu-screen');
         }
@@ -340,7 +621,7 @@
             if (current === 'settings-screen' && backTarget === 'pause-screen') {
                 show('pause-screen'); e.preventDefault(); return;
             }
-            if (current === 'select-screen' || current === 'settings-screen' || current === 'profile-screen' || current === 'moves-screen') {
+            if (['select-screen', 'settings-screen', 'profile-screen', 'moves-screen', 'vault-screen', 'bazaar-screen', 'missions-screen'].includes(current)) {
                 show('menu-screen'); e.preventDefault(); return;
             }
             if ($('hud').classList.contains('on')) { pauseGame(); e.preventDefault(); }
@@ -361,7 +642,7 @@
     }, false);
 
     /* ------------------------------------------------------------------
-       match statistics
+       match statistics & rewards
        ------------------------------------------------------------------ */
     let matchStats = null;
     function resetMatchStats() {
@@ -395,11 +676,22 @@
         profile.lastId = p1.id;
         saveProfile();
 
+        // Award Kursi Coins, Votes, and XP
+        const earnedCoins = p1Won ? 450 : 150;
+        const earnedVotes = p1Won ? 25 : 8;
+        const earnedXp = p1Won ? 200 : 75;
+        econ.coins += earnedCoins;
+        econ.votes += earnedVotes;
+        econ.xp += earnedXp;
+        saveEcon();
+        syncEconHeader();
+
         const set = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
         const img = (id, idn) => { const el = $(id); if (el) el.src = faceOf(idn); };
 
         set('res-winner', (p1Won ? p1.name : p2.name));
         set('res-kicker', p1Won ? 'Kursi haasil — victory' : 'Kursi gayi — defeat');
+        set('res-reward-banner', `+${earnedCoins} KURSI COINS • +${earnedVotes} VOTES • +${earnedXp} XP`);
         set('res-p1-name', p1.name); img('res-p1-face', p1.id);
         set('res-p2-name', p2.name); img('res-p2-face', p2.id);
         set('res-rounds', (g.p1Wins || 0) + ' — ' + (g.p2Wins || 0));
@@ -418,9 +710,6 @@
         setTimeout(() => show('results-screen'), 420);
     }
 
-    /* ------------------------------------------------------------------
-       profile + moves rendering
-       ------------------------------------------------------------------ */
     function renderProfile() {
         loadProfile();
         const rate = profile.matches ? Math.round((profile.wins / profile.matches) * 100) : 0;
@@ -468,9 +757,6 @@
         )).join('');
     }
 
-    /* ------------------------------------------------------------------
-       settings screen (shares the in-fight settings object)
-       ------------------------------------------------------------------ */
     function settingsApi() { return window.FKUI_SETTINGS || null; }
 
     function syncSettings() {
@@ -518,9 +804,6 @@
         renderMenu();
     }, false);
 
-    /* ------------------------------------------------------------------
-       boot the flow
-       ------------------------------------------------------------------ */
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#accept-disclaimer')) return;
         e.stopPropagation();
@@ -531,19 +814,20 @@
 
     function init() {
         if (!window.game) { setTimeout(init, 120); return; }
-        show('menu-screen');          // boot screen is only used after the notice
+        show('menu-screen');
         $('boot-screen').style.display = 'none';
         $('disclaimer-screen').style.display = 'flex';
         renderMenu();
     }
     setTimeout(init, 60);
 
-    /* public surface */
     window.FKUI = {
         show, boot,
         startFight,
         onHit, onSuper, matchEnd,
         pauseGame, resumeGame,
+        applyEquippedLoadout,
+        getEquippedProp: () => econ.equippedProp || 'DEFAULT',
         get current() { return current; }
     };
 })();
