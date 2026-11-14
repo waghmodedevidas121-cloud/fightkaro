@@ -17,13 +17,19 @@ const CHAR_MODEL = {
     TARIFFTAAU: 'trump',
     DOZERDADA:  'yogi',
     TOLLMAN:    'nitin',
-    MBAPU:      'mbapu'
+    MBAPU:      'mbapu',
+    // reserve rigs that shipped in the original build but were never selectable
+    CHANAKYA:   'amit',
+    CHARAKING:  'lalu',
+    PRIMEANCHOR:'ravi',
+    FACTCHECKER:'dhruv'
 };
 
 // face portrait in ./faces (used by the select screen)
 const CHAR_FACE = {
     MITRAMAN: 'modi', YATRABOY: 'rahul', DEEDEE: 'didi', TARIFFTAAU: 'trump',
-    DOZERDADA: 'yogi', TOLLMAN: 'nitin', MBAPU: 'mbapu'
+    DOZERDADA: 'yogi', TOLLMAN: 'nitin', MBAPU: 'mbapu',
+    CHANAKYA: 'amit', CHARAKING: 'lalu', PRIMEANCHOR: 'ravi', FACTCHECKER: 'dhruv'
 };
 
 // clip -> [windup, impact, recovery] in seconds of clip time (original tables)

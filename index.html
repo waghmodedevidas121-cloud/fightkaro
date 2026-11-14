@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="fk-build" content="bmwf6wq8h">
+<meta name="fk-build" content="bmwg2ys25">
 <link rel="icon" href="data:,">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SANSAD SHOWDOWN // The Great Kursi Fight</title>
-<link rel="stylesheet" href="css/game.css?v=bmwf6wq8h">
+<link rel="stylesheet" href="css/game.css?v=bmwg2ys25">
 </head>
 <body>
 <canvas id="game-canvas"></canvas>
@@ -54,24 +54,53 @@
                     <span class="label">Fight</span>
                     <span class="meta">Kursi Match</span>
                 </button>
-                <button class="menu-item" data-go="profile">
+                <button class="menu-item" data-go="training">
                     <span class="idx">02</span>
+                    <span class="label">Training</span>
+                    <span class="meta">Dojo</span>
+                </button>
+                <button class="menu-item" data-go="vault">
+                    <span class="idx">03</span>
+                    <span class="label">Vault</span>
+                    <span class="meta">Loadout</span>
+                </button>
+                <button class="menu-item" data-go="bazaar">
+                    <span class="idx">04</span>
+                    <span class="label">Bazaar</span>
+                    <span class="meta">Spend Coins</span>
+                </button>
+                <button class="menu-item" data-go="missions">
+                    <span class="idx">05</span>
+                    <span class="label">Missions</span>
+                    <span class="meta">Directives</span>
+                </button>
+                <button class="menu-item" data-go="profile">
+                    <span class="idx">06</span>
                     <span class="label">Profile</span>
                     <span class="meta">Record</span>
                 </button>
                 <button class="menu-item" data-go="moves">
-                    <span class="idx">03</span>
+                    <span class="idx">07</span>
                     <span class="label">How to Play</span>
                     <span class="meta">Moves</span>
                 </button>
                 <button class="menu-item" data-go="settings">
-                    <span class="idx">04</span>
+                    <span class="idx">08</span>
                     <span class="label">Settings</span>
                     <span class="meta">Audio · UI</span>
                 </button>
             </nav>
 
+            <div class="theme-switch" id="theme-switch" role="group" aria-label="Interface theme">
+                <span class="ts-label">Theme</span>
+                <button class="ts-btn" data-theme-set="a" title="Obsidian">A</button>
+                <button class="ts-btn" data-theme-set="b" title="Esports">B</button>
+                <button class="ts-btn" data-theme-set="c" title="Cyber">C</button>
+                <button class="ts-btn" data-theme-set="d" title="Minimal">D</button>
+            </div>
+
             <div class="menu-foot">
+                <span class="coin-chip"><i>◈</i><b class="coin-value">0</b></span>
                 <span id="menu-build">build</span>
                 <span>Enter / Click</span>
             </div>
@@ -363,6 +392,7 @@
                 <div class="row"><span class="k">Damage Dealt</span><span class="v" id="res-dmg">0</span></div>
                 <div class="row"><span class="k">Best Combo</span><span class="v" id="res-combo">0</span></div>
                 <div class="row"><span class="k">Shakti Used</span><span class="v" id="res-super">0</span></div>
+                <div class="row"><span class="k">Kursi Coins</span><span class="v gold" id="res-coins">+0</span></div>
             </div>
 
             <div class="res-side p2 right" id="res-side-p2">
@@ -523,6 +553,113 @@
     </div>
 </div>
 
+<!-- ============================================================
+     12. TRAINING DOJO
+     ============================================================ -->
+<div id="training-screen" class="modal-screen">
+    <div class="screen">
+        <div class="screen-head">
+            <div>
+                <h2 class="screen-title">Training Dojo</h2>
+                <p class="screen-sub">Infinite shakti, healing dummy, frozen clock. Combos yahin set karo.</p>
+            </div>
+            <div class="head-actions">
+                <span class="coin-chip"><i>◈</i><b class="coin-value">0</b></span>
+                <button class="btn btn-ghost" data-back="menu">Back</button>
+            </div>
+        </div>
+
+        <div class="training-grid">
+            <section class="set-group">
+                <h3>Pick the Dummy</h3>
+                <div class="train-roster" id="train-roster"></div>
+            </section>
+
+            <section class="set-group">
+                <h3>Drills</h3>
+                <div class="set-row">
+                    <div><div class="sr-k">Infinite Shakti</div><div class="sr-d">Shakti meter 100% par locked.</div></div>
+                    <div class="sr-c seg" data-train="shakti"><button data-val="on">On</button><button data-val="off">Off</button></div>
+                </div>
+                <div class="set-row">
+                    <div><div class="sr-k">Healing Dummy</div><div class="sr-d">Dummy ka HP turant refill hota hai.</div></div>
+                    <div class="sr-c seg" data-train="heal"><button data-val="on">On</button><button data-val="off">Off</button></div>
+                </div>
+                <div class="set-row">
+                    <div><div class="sr-k">Freeze Clock</div><div class="sr-d">Round timer rukta hai.</div></div>
+                    <div class="sr-c seg" data-train="freeze"><button data-val="on">On</button><button data-val="off">Off</button></div>
+                </div>
+                <div class="set-row">
+                    <div><div class="sr-k">Reset Positions</div><div class="sr-d">Dono fighters centre par.</div></div>
+                    <div class="sr-c"><button class="btn btn-ghost" id="train-reset">Reset</button></div>
+                </div>
+            </section>
+        </div>
+
+        <div class="select-foot">
+            <div class="hint">Dojo match career record me count nahi hota. <b>Esc</b> se pause.</div>
+            <button class="btn btn-gold" id="train-start">Enter the Dojo</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     13. VAULT / LOADOUT
+     ============================================================ -->
+<div id="vault-screen" class="modal-screen">
+    <div class="screen">
+        <div class="screen-head">
+            <div>
+                <h2 class="screen-title">Vault</h2>
+                <p class="screen-sub">Bazaar se kharide gaye finishes. Equip karo — fighter ke aura aur shakti trail par lagta hai.</p>
+            </div>
+            <div class="head-actions">
+                <span class="coin-chip"><i>◈</i><b class="coin-value">0</b></span>
+                <button class="btn btn-ghost" data-back="menu">Back</button>
+            </div>
+        </div>
+        <div class="vault-grid" id="vault-grid"></div>
+    </div>
+</div>
+
+<!-- ============================================================
+     14. BAZAAR
+     ============================================================ -->
+<div id="bazaar-screen" class="modal-screen">
+    <div class="screen">
+        <div class="screen-head">
+            <div>
+                <h2 class="screen-title">Sansad Bazaar</h2>
+                <p class="screen-sub">Kursi Coins sirf matches aur missions se milte hain. Koi real paisa nahi.</p>
+            </div>
+            <div class="head-actions">
+                <span class="coin-chip"><i>◈</i><b class="coin-value">0</b></span>
+                <button class="btn btn-ghost" data-back="menu">Back</button>
+            </div>
+        </div>
+        <div class="bazaar-grid" id="bazaar-grid"></div>
+    </div>
+</div>
+
+<!-- ============================================================
+     15. MISSIONS
+     ============================================================ -->
+<div id="missions-screen" class="modal-screen">
+    <div class="screen">
+        <div class="screen-head">
+            <div>
+                <h2 class="screen-title">Directives</h2>
+                <p class="screen-sub">Teen live missions. Progress asli matches se badhta hai — claim karke coins lo.</p>
+            </div>
+            <div class="head-actions">
+                <span class="coin-chip"><i>◈</i><b class="coin-value">0</b></span>
+                <button class="btn btn-ghost" data-back="menu">Back</button>
+            </div>
+        </div>
+        <div class="mission-list" id="mission-list"></div>
+    </div>
+</div>
+
 <!-- BREAKING NEWS TICKER -->
 <div id="news-ticker" class="ticker-wrap">
     <div class="ticker-badge">Breaking</div>
@@ -545,18 +682,18 @@
     <button id="noserver-close" type="button">Samajh Gaya</button>
 </div>
 
-<script src="js/vendor/three.min.js?v=bmwf6wq8h"></script>
-<script src="js/vendor/GLTFLoader.js?v=bmwf6wq8h"></script>
-<script src="js/vendor/DRACOLoader.js?v=bmwf6wq8h"></script>
-<script src="js/data.js?v=bmwf6wq8h"></script>
-<script src="js/clips.js?v=bmwf6wq8h"></script>
-<script src="js/audio.js?v=bmwf6wq8h"></script>
-<script src="js/vfx.js?v=bmwf6wq8h"></script>
-<script src="js/props.js?v=bmwf6wq8h"></script>
-<script src="js/rig.js?v=bmwf6wq8h"></script>
-<script src="js/fighter.js?v=bmwf6wq8h"></script>
-<script src="js/engine.js?v=bmwf6wq8h"></script>
-<script src="js/main.js?v=bmwf6wq8h"></script>
-<script src="js/screens.js?v=bmwf6wq8h"></script>
+<script src="js/vendor/three.min.js?v=bmwg2ys25"></script>
+<script src="js/vendor/GLTFLoader.js?v=bmwg2ys25"></script>
+<script src="js/vendor/DRACOLoader.js?v=bmwg2ys25"></script>
+<script src="js/data.js?v=bmwg2ys25"></script>
+<script src="js/clips.js?v=bmwg2ys25"></script>
+<script src="js/audio.js?v=bmwg2ys25"></script>
+<script src="js/vfx.js?v=bmwg2ys25"></script>
+<script src="js/props.js?v=bmwg2ys25"></script>
+<script src="js/rig.js?v=bmwg2ys25"></script>
+<script src="js/fighter.js?v=bmwg2ys25"></script>
+<script src="js/engine.js?v=bmwg2ys25"></script>
+<script src="js/main.js?v=bmwg2ys25"></script>
+<script src="js/screens.js?v=bmwg2ys25"></script>
 </body>
 </html>

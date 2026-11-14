@@ -22,12 +22,19 @@
     const blankProfile = () => ({
         matches: 0, wins: 0, losses: 0,
         supers: 0, bestCombo: 0, longest: 0,
-        usage: {}, lastId: null
+        usage: {}, lastId: null,
+        coins: 150, owned: ['finish-bronze'], equip: 'finish-bronze',
+        missions: {}, claimed: []
     });
     let profile = blankProfile();
     function loadProfile() {
         try { Object.assign(profile, JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}')); } catch (e) { /* fresh save */ }
         if (!profile.usage) profile.usage = {};
+        if (!Array.isArray(profile.owned) || !profile.owned.length) profile.owned = ['finish-bronze'];
+        if (!profile.equip) profile.equip = 'finish-bronze';
+        if (typeof profile.coins !== 'number') profile.coins = 150;
+        if (!profile.missions || typeof profile.missions !== 'object') profile.missions = {};
+        if (!Array.isArray(profile.claimed)) profile.claimed = [];
     }
     loadProfile();
     const saveProfile = () => { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {} };
@@ -43,7 +50,8 @@
        ------------------------------------------------------------------ */
     const SCREENS = [
         'disclaimer-screen', 'boot-screen', 'menu-screen', 'select-screen', 'vs-screen',
-        'pause-screen', 'results-screen', 'settings-screen', 'profile-screen', 'moves-screen'
+        'pause-screen', 'results-screen', 'settings-screen', 'profile-screen', 'moves-screen',
+        'training-screen', 'vault-screen', 'bazaar-screen', 'missions-screen'
     ];
 
     let current = 'disclaimer-screen';
@@ -58,16 +66,17 @@
         const hud = $('hud');
         if (hud && id !== 'select-screen' && id !== 'pause-screen') {
             // the HUD belongs to the fight only; keep it out of every menu
-            if (id === 'menu-screen' || id === 'results-screen' || id === 'settings-screen' ||
-                id === 'profile-screen' || id === 'moves-screen' || id === 'boot-screen' || id === 'disclaimer-screen') {
-                hud.classList.remove('on');
-            }
+            if (id !== 'vs-screen') hud.classList.remove('on');
         }
         if (id === 'menu-screen') renderMenu();
         if (id === 'profile-screen') renderProfile();
         if (id === 'moves-screen') renderMoves();
         if (id === 'settings-screen') syncSettings();
         if (id === 'select-screen') syncPicks();
+        if (id === 'training-screen') renderTraining();
+        if (id === 'vault-screen') renderVault();
+        if (id === 'bazaar-screen') renderBazaar();
+        if (id === 'missions-screen') renderMissions();
     }
     const hide = (id) => { const el = $(id); if (el) el.style.display = 'none'; };
 
@@ -104,6 +113,7 @@
        ------------------------------------------------------------------ */
     function renderMenu() {
         loadProfile();
+        paintCoins();
         const strip = $('menu-roster');
         if (strip && !strip.childElementCount && typeof ROSTER !== 'undefined') {
             strip.innerHTML = Object.values(ROSTER).slice(0, 8).map((c) => (
@@ -250,6 +260,7 @@
             hide('vs-screen');
             resetMatchStats();
             g.startFullMatch();
+            if (training.active) applyFinish(g.p1);
             $('hud').classList.add('on');
             busy = false;
         };
@@ -281,6 +292,10 @@
             if (target === 'select') { show('select-screen'); }
             else if (target === 'profile') show('profile-screen');
             else if (target === 'moves') show('moves-screen');
+            else if (target === 'training') { training.active = false; show('training-screen'); }
+            else if (target === 'vault') show('vault-screen');
+            else if (target === 'bazaar') show('bazaar-screen');
+            else if (target === 'missions') show('missions-screen');
             else if (target === 'settings') { backTarget = 'menu-screen'; show('settings-screen'); }
         }
         const back = e.target.closest('[data-back]');
@@ -340,7 +355,8 @@
             if (current === 'settings-screen' && backTarget === 'pause-screen') {
                 show('pause-screen'); e.preventDefault(); return;
             }
-            if (current === 'select-screen' || current === 'settings-screen' || current === 'profile-screen' || current === 'moves-screen') {
+            if (current === 'select-screen' || current === 'settings-screen' || current === 'profile-screen' || current === 'moves-screen' ||
+                current === 'training-screen' || current === 'vault-screen' || current === 'bazaar-screen' || current === 'missions-screen') {
                 show('menu-screen'); e.preventDefault(); return;
             }
             if ($('hud').classList.contains('on')) { pauseGame(); e.preventDefault(); }
@@ -384,15 +400,31 @@
         if (!g) return;
         const p1Won = (g.p1Wins || 0) >= 2;
         const p1 = g.p1.data, p2 = g.p2.data;
+        const stats = matchStats || { p1dmg: 0, bestCombo: 0, supers: 0, timeLeft: 0 };
+
+        // the dojo never reaches the results screen and never touches the record
+        if (training.active) {
+            training.active = false;
+            $('hud').classList.remove('on');
+            setTimeout(() => show('training-screen'), 300);
+            return;
+        }
 
         profile.matches++;
         if (p1Won) profile.wins++; else profile.losses++;
-        profile.supers += (matchStats ? matchStats.supers : 0);
-        profile.bestCombo = Math.max(profile.bestCombo, matchStats ? matchStats.bestCombo : 0);
+        profile.supers += stats.supers;
+        profile.bestCombo = Math.max(profile.bestCombo, stats.bestCombo);
         const timeLeft = Math.max(0, Math.round(g.timer || 0));
         profile.longest = Math.max(profile.longest, 60 - timeLeft);
         profile.usage[p1.id] = (profile.usage[p1.id] || 0) + 1;
         profile.lastId = p1.id;
+
+        /* coins are only ever paid for real match output */
+        const earned = (p1Won ? 60 : 25)
+            + (stats.supers ? stats.supers * 10 : 0)
+            + (stats.bestCombo >= 5 ? 15 : 0);
+        profile.coins += earned;
+        completeMissionBookkeeping(g, p1Won, stats);
         saveProfile();
 
         const set = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
@@ -404,9 +436,10 @@
         set('res-p2-name', p2.name); img('res-p2-face', p2.id);
         set('res-rounds', (g.p1Wins || 0) + ' — ' + (g.p2Wins || 0));
         set('res-time', timeLeft + 's');
-        set('res-dmg', String(Math.round(matchStats ? matchStats.p1dmg : 0)));
-        set('res-combo', String(matchStats ? matchStats.bestCombo : 0));
-        set('res-super', String(matchStats ? matchStats.supers : 0));
+        set('res-dmg', String(Math.round(stats.p1dmg)));
+        set('res-combo', String(stats.bestCombo));
+        set('res-super', String(stats.supers));
+        set('res-coins', '+' + earned);
 
         $('res-side-p1').classList.toggle('lost', !p1Won);
         $('res-side-p2').classList.toggle('lost', p1Won);
@@ -516,6 +549,278 @@
         saveProfile();
         renderProfile();
         renderMenu();
+    }, false);
+
+    /* ==================================================================
+       THEME — four concepts, one CSS variable contract
+       The theme only swaps variables; no layout or markup changes, so a
+       screenshot of any screen at A is the same geometry as at D.
+       ================================================================== */
+    const THEME_KEY = 'fk.theme';
+    const THEMES = ['a', 'b', 'c', 'd'];
+
+    function paintTheme(t) {
+        $$('#theme-switch .ts-btn').forEach((b) => {
+            b.classList.toggle('is-on', b.getAttribute('data-theme-set') === t);
+        });
+    }
+    function applyTheme(t) {
+        const id = THEMES.indexOf(t) >= 0 ? t : 'a';
+        document.body.setAttribute('data-theme', id);
+        paintTheme(id);
+        try { localStorage.setItem(THEME_KEY, id); } catch (e) {}
+    }
+    let themeId = 'a';
+    try { themeId = localStorage.getItem(THEME_KEY) || 'a'; } catch (e) {}
+    applyTheme(themeId);
+
+    document.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-theme-set]');
+        if (!b) return;
+        applyTheme(b.getAttribute('data-theme-set'));
+        try { sfx.uiTap(); } catch (err) {}
+    }, false);
+
+    /* ==================================================================
+       ECONOMY — Kursi Coins, missions, vault
+       Every coin here comes from a real match or a real mission counter.
+       There is no purchase path, no timer, no reroll.
+       ================================================================== */
+    const SHOP = [
+        { id: 'finish-bronze', kind: 'finish', name: 'Forged Bronze', desc: 'Default finish. Warm brass emissive on every GLB material.', price: 0, hex: 0xd8b26a, glow: 0.10 },
+        { id: 'finish-emerald', kind: 'finish', name: 'Lok Sabha Emerald', desc: 'Cool green rim tint. Reads clearly on the bright Sansad floor.', price: 400, hex: 0x2fae7a, glow: 0.16 },
+        { id: 'finish-crimson', kind: 'finish', name: 'Akhada Crimson', desc: 'Akhada red heat. Strongest glow that still sits inside the danger palette.', price: 750, hex: 0xc0302a, glow: 0.18 },
+        { id: 'finish-cyan', kind: 'finish', name: 'Studio Cyan', desc: 'Broadcast cyan. Pairs with the Cyber theme without changing the fighter.', price: 950, hex: 0x24a9f0, glow: 0.16 }
+    ];
+    const MISSIONS = [
+        { id: 'm-super', name: 'Shakti Directive', desc: 'Land 3 supers across any matches.', metric: 'supers', target: 3, reward: 180 },
+        { id: 'm-combo', name: 'Combo Chakra', desc: 'Hit a 5-hit combo in a single match.', metric: 'combos', target: 1, reward: 220 },
+        { id: 'm-sweep', name: 'Clean Sweep', desc: 'Win a match without dropping a round.', metric: 'sweeps', target: 1, reward: 260 },
+        { id: 'm-grind', name: 'Floor Test', desc: 'Play 5 matches on any stage.', metric: 'matches', target: 5, reward: 140 }
+    ];
+
+    const shopItem = (id) => SHOP.filter((s) => s.id === id)[0] || SHOP[0];
+    const owns = (id) => profile.owned.indexOf(id) >= 0;
+    const missionCount = (m) => (profile.missions[m.id] || 0);
+    const missionDone = (m) => missionCount(m) >= m.target;
+    const missionClaimed = (m) => profile.claimed.indexOf(m.id) >= 0;
+
+    function paintCoins() {
+        $$('.coin-value').forEach((el) => { el.textContent = String(profile.coins | 0); });
+    }
+
+    function applyFinish(fighter) {
+        if (!fighter || !fighter.glbMats || !fighter.glbMats.length) return;
+        const f = shopItem(profile.equip);
+        fighter.glbMats.forEach((m) => {
+            if (!m) return;
+            if (m.emissive && m.emissive.setHex) m.emissive.setHex(f.hex);
+            if (typeof m.emissiveIntensity === 'number') m.emissiveIntensity = f.glow;
+        });
+        fighter._finishApplied = profile.equip;
+    }
+
+    function swatchCss(hex) {
+        const c = '#' + hex.toString(16).padStart(6, '0');
+        return 'background: radial-gradient(120% 100% at 30% 20%, ' + c + 'cc, #0a0d10 72%);';
+    }
+
+    function renderVault() {
+        paintCoins();
+        const box = $('vault-grid');
+        if (!box) return;
+        const owned = SHOP.filter((s) => owns(s.id));
+        if (!owned.length) {
+            box.innerHTML = '<div class="vault-empty">Vault khaali hai. Bazaar se pehla finish kharido.</div>';
+            return;
+        }
+        box.innerHTML = owned.map((s) => {
+            const on = profile.equip === s.id;
+            return '<article class="vault-card' + (on ? ' is-equipped' : '') + '">' +
+                '<div class="vc-swatch" style="' + swatchCss(s.hex) + '"></div>' +
+                '<div class="vc-name">' + s.name + '</div>' +
+                '<div class="vc-desc">' + s.desc + '</div>' +
+                '<div class="vc-row">' +
+                    '<span class="vc-lock">' + (on ? 'Equipped' : 'Owned') + '</span>' +
+                    '<button class="btn ' + (on ? 'btn-ghost' : 'btn-gold') + '" data-equip="' + s.id + '"' + (on ? ' disabled' : '') + '>' +
+                        (on ? 'In use' : 'Equip') + '</button>' +
+                '</div>' +
+            '</article>';
+        }).join('');
+    }
+
+    function renderBazaar() {
+        paintCoins();
+        const box = $('bazaar-grid');
+        if (!box) return;
+        box.innerHTML = SHOP.map((s) => {
+            const owned = owns(s.id);
+            const can = profile.coins >= s.price;
+            const label = owned ? 'Owned' : (can ? 'Buy · ' + s.price : 'Need ' + (s.price - profile.coins) + ' more');
+            return '<article class="bazaar-card' + (owned ? ' is-equipped' : '') + '">' +
+                '<div class="vc-swatch" style="' + swatchCss(s.hex) + '"></div>' +
+                '<div class="vc-name">' + s.name + '</div>' +
+                '<div class="vc-desc">' + s.desc + '</div>' +
+                '<div class="vc-row">' +
+                    '<span class="vc-price">' + (s.price ? '◈ ' + s.price : 'Starter') + '</span>' +
+                    (owned
+                        ? '<span class="vc-lock">' + (profile.equip === s.id ? 'Equipped' : 'In vault') + '</span>'
+                        : '<button class="btn ' + (can ? 'btn-gold' : 'btn-ghost') + '" data-buy="' + s.id + '"' + (can ? '' : ' disabled') + '>' + label + '</button>') +
+                '</div>' +
+            '</article>';
+        }).join('');
+    }
+
+    function renderMissions() {
+        paintCoins();
+        const box = $('mission-list');
+        if (!box) return;
+        box.innerHTML = MISSIONS.map((m) => {
+            const n = missionCount(m);
+            const done = missionDone(m);
+            const claimed = missionClaimed(m);
+            const pct = Math.min(100, Math.round((n / m.target) * 100));
+            return '<div class="mission-row' + (done ? ' is-done' : '') + (claimed ? ' is-claimed' : '') + '">' +
+                '<div><div class="m-name">' + m.name + '</div><div class="m-sub">' + m.desc + '</div></div>' +
+                '<div class="mission-prog-wrap">' +
+                    '<div class="mission-prog"><i style="width:' + pct + '%"></i></div>' +
+                    '<div class="mission-count">' + Math.min(n, m.target) + ' / ' + m.target + '</div>' +
+                '</div>' +
+                '<button class="btn ' + (done && !claimed ? 'btn-gold' : 'btn-ghost') + '" data-claim="' + m.id + '"' +
+                    (done && !claimed ? '' : ' disabled') + '>' +
+                    (claimed ? 'Claimed' : (done ? 'Claim ◈ ' + m.reward : '◈ ' + m.reward)) +
+                '</button>' +
+            '</div>';
+        }).join('');
+    }
+
+    function completeMissionBookkeeping(g, p1Won, stats) {
+        const bump = (metric, amount) => {
+            MISSIONS.forEach((m) => {
+                if (m.metric !== metric) return;
+                if (missionClaimed(m)) return;
+                profile.missions[m.id] = Math.min(m.target, missionCount(m) + amount);
+            });
+        };
+        bump('matches', 1);
+        if (stats) {
+            if (stats.supers) bump('supers', stats.supers);
+            bump('combos', (stats.bestCombo || 0) >= 5 ? 1 : 0);
+        }
+        if (p1Won && (g.p2Wins || 0) === 0) bump('sweeps', 1);
+    }
+
+    /* ==================================================================
+       TRAINING DOJO
+       Real engine state, no fake toggles: shakti is written every frame,
+       the dummy actually heals, the clock is actually pinned.
+       ================================================================== */
+    const training = { active: false, shakti: true, heal: true, freeze: true, dummy: 'YATRABOY' };
+
+    function renderTraining() {
+        paintCoins();
+        const box = $('train-roster');
+        if (box && typeof ROSTER !== 'undefined') {
+            box.innerHTML = Object.values(ROSTER).map((c) => (
+                '<button class="train-card' + (training.dummy === c.id ? ' is-on' : '') + '" data-dummy="' + c.id + '">' +
+                    '<img src="' + faceOf(c.id) + '" alt="">' +
+                    '<span>' + c.name + '</span>' +
+                '</button>'
+            )).join('');
+        }
+        $$('#training-screen .seg[data-train]').forEach((seg) => {
+            const key = seg.getAttribute('data-train');
+            $$('button', seg).forEach((b) => {
+                const on = b.getAttribute('data-val') === 'on';
+                b.classList.toggle('active', on === !!training[key]);
+            });
+        });
+    }
+
+    function trainingTick() {
+        requestAnimationFrame(trainingTick);
+        const g = window.game;
+        if (!g || !g.p1) return;
+        // an equipped finish must survive a late GLB attach, so keep it in sync
+        if (g.p1.glbMats && g.p1.glbMats.length && g.p1._finishApplied !== profile.equip) applyFinish(g.p1);
+        if (!training.active) return;
+        if (training.shakti) g.p1.shakti = 100;
+        if (training.freeze && g.matchActive) g.timer = 60;
+        if (training.heal && g.p2 && g.p2.hp < g.p2.maxHp) g.p2.hp = g.p2.maxHp;
+        if (g.p1.hp <= 0) g.p1.hp = g.p1.maxHp;          // the dojo never ends
+    }
+    requestAnimationFrame(trainingTick);
+
+    document.addEventListener('click', (e) => {
+        const card = e.target.closest('[data-dummy]');
+        if (card) {
+            training.dummy = card.getAttribute('data-dummy');
+            renderTraining();
+            try { sfx.uiTap(); } catch (err) {}
+            return;
+        }
+        const seg = e.target.closest('#training-screen .seg[data-train] button');
+        if (seg) {
+            const key = seg.parentElement.getAttribute('data-train');
+            training[key] = seg.getAttribute('data-val') === 'on';
+            renderTraining();
+            try { sfx.uiTap(); } catch (err) {}
+            return;
+        }
+        if (e.target.closest('#train-reset')) {
+            const g = window.game;
+            if (g && g.p1) {
+                g.p1.hp = g.p1.maxHp;
+                if (g.p2) g.p2.hp = g.p2.maxHp;
+                g.timer = 60;
+                g.p1.root.position.x = -2.2;
+                g.p2.root.position.x = 2.2;
+            }
+            return;
+        }
+        if (e.target.closest('#train-start')) {
+            const g = window.game;
+            if (!g) return;
+            g.p2Choice = training.dummy;
+            if (typeof g.refreshRosterCards === 'function') g.refreshRosterCards();
+            training.active = true;
+            startFight();
+            return;
+        }
+        const buy = e.target.closest('[data-buy]');
+        if (buy) {
+            const s = shopItem(buy.getAttribute('data-buy'));
+            if (!s || owns(s.id) || profile.coins < s.price) return;
+            profile.coins -= s.price;
+            profile.owned.push(s.id);
+            saveProfile();
+            renderBazaar();
+            renderVault();
+            try { sfx.play('kaching'); } catch (err) {}
+            return;
+        }
+        const eq = e.target.closest('[data-equip]');
+        if (eq) {
+            const id = eq.getAttribute('data-equip');
+            if (!owns(id)) return;
+            profile.equip = id;
+            saveProfile();
+            renderVault();
+            renderBazaar();
+            applyFinish(window.game && window.game.p1);
+            try { sfx.uiConfirm(); } catch (err) {}
+            return;
+        }
+        const claim = e.target.closest('[data-claim]');
+        if (claim) {
+            const m = MISSIONS.filter((x) => x.id === claim.getAttribute('data-claim'))[0];
+            if (!m || !missionDone(m) || missionClaimed(m)) return;
+            profile.claimed.push(m.id);
+            profile.coins += m.reward;
+            saveProfile();
+            renderMissions();
+            try { sfx.play('kaching'); } catch (err) {}
+        }
     }, false);
 
     /* ------------------------------------------------------------------

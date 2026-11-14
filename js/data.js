@@ -77,3 +77,38 @@ const MOVES = {
     SP_PUNCH:{ dmg: 15, range: 2.40, startup: 0.11, active: 0.14, recovery: 0.28, stun: 0.46, push: 6.8, knockdown: true },
     SP_KICK: { dmg: 17, range: 2.65, startup: 0.13, active: 0.15, recovery: 0.32, stun: 0.50, push: 7.5, knockdown: true }
 };
+
+/* ---- reserve fighters (models + voices already in the repo) ---- */
+ROSTER.CHANAKYA = {
+    id: 'CHANAKYA', name: 'CHANAKYA', team: 'Team Neeti', hp: 100, dmgMult: 1.07, walkSpeed: 5.6,
+    color: 0xff9f1c, outfitColor: 0xf7f1e3, beard: false, hairColor: 0x1b1b1b, icon: '',
+    introLine: 'Neeti pehle, baaki sab baad mein!',
+    superLine: 'Masterstroke!',
+    sp1Name: 'NEETI PALM', sp2Name: 'ARTHASHASTRA KICK', superName: 'MASTERSTROKE',
+    superDmg: 30
+};
+ROSTER.CHARAKING = {
+    id: 'CHARAKING', name: 'CHARA KING', team: 'Team Chara', hp: 100, dmgMult: 1.02, walkSpeed: 6.1,
+    color: 0x8e6bff, outfitColor: 0xdfe6ff, beard: false, hairColor: 0x111111, icon: '',
+    introLine: 'Chara ka jaadu chalta hai!',
+    superLine: 'Lantern Cyclone!',
+    sp1Name: 'MUDDA PUNCH', sp2Name: 'LANTERN KICK', superName: 'LANTERN CYCLONE',
+    superDmg: 30
+};
+ROSTER.PRIMEANCHOR = {
+    id: 'PRIMEANCHOR', name: 'PRIME ANCHOR', team: 'Team Anchor', hp: 100, dmgMult: 1.05, walkSpeed: 6.0,
+    color: 0xff3f6d, outfitColor: 0xffffff, beard: false, hairColor: 0x2a2a2a, icon: '',
+    introLine: 'Breaking news: kursi par hamla!',
+    superLine: 'Darr Ka Mahaul!',
+    sp1Name: 'PRIME TIME PALM', sp2Name: 'ANCHOR SWEEP', superName: 'DARR KA MAHAUL',
+    superDmg: 30
+};
+ROSTER.FACTCHECKER = {
+    id: 'FACTCHECKER', name: 'FACT CHECKER', team: 'Team Source', hp: 100, dmgMult: 1.04, walkSpeed: 6.4,
+    color: 0x38e0c8, outfitColor: 0x1f2a33, beard: false, hairColor: 0x101010, icon: '',
+    introLine: 'Source bhejo, warna sach bolo!',
+    superLine: 'Explainer Beam!',
+    sp1Name: 'FACT CHECK JAB', sp2Name: 'SOURCE SLAM', superName: 'EXPLAINER BEAM',
+    superDmg: 30
+};
+

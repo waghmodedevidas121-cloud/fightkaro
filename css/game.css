@@ -29,6 +29,10 @@
     --teal: #24a9a0;
     --green: #35c07a;
 
+    /* full-screen wash (themed) */
+    --screen-a: rgba(18, 26, 32, 0.92);
+    --screen-b: rgba(3, 5, 6, 0.97);
+
     /* type */
     --font-display: "Bahnschrift SemiCondensed", "Bahnschrift", "Arial Narrow", Impact, sans-serif;
     --font-body: "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -157,7 +161,7 @@ body {
     justify-content: center;
     padding: var(--screen-pad);
     background:
-        radial-gradient(120% 90% at 50% 0%, rgba(18, 26, 32, 0.92), rgba(3, 5, 6, 0.97) 70%),
+        radial-gradient(120% 90% at 50% 0%, var(--screen-a), var(--screen-b) 70%),
         var(--ink);
     overflow: hidden;
 }
@@ -473,7 +477,7 @@ body {
 .modal-screen .roster-grid,
 .roster-grid {
     display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 10px;
     margin: 0;
     align-content: center;
@@ -1571,6 +1575,210 @@ body.sound-off .ticker-wrap { opacity: 0.5; }
 /* roster card face */
 .char-card .char-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .char-card:hover .char-avatar img { filter: saturate(1.1) contrast(1.04); }
+
+/* ==========================================================================
+   THEME SYSTEM â€” four concepts, one variable contract
+   A Obsidian (default) Â· B Esports Â· C Cyber Â· D Minimal
+   Colour stays semantic in every theme: accent = state, red = danger, teal = shakti.
+   ========================================================================== */
+
+body[data-theme="b"] {
+    --ink: #04070c; --ink-1: #070c15; --ink-2: #0c1421; --ink-3: #132033;
+    --line: rgba(198, 244, 50, 0.26); --line-soft: rgba(255, 255, 255, 0.09);
+    --paper: #eef4ff; --paper-dim: rgba(238, 244, 255, 0.66); --paper-mute: rgba(238, 244, 255, 0.36);
+    --brass: #c6f432; --brass-hi: #eaff9b; --brass-deep: #6f8f10;
+    --gold: #c6f432; --red: #ff4d4d; --red-hi: #ff8a8a; --teal: #38a6ff; --green: #c6f432;
+    --screen-a: rgba(12, 20, 33, 0.94); --screen-b: rgba(2, 4, 8, 0.98);
+}
+
+body[data-theme="c"] {
+    --ink: #06040c; --ink-1: #0a0714; --ink-2: #120c1f; --ink-3: #1b1330;
+    --line: rgba(255, 47, 208, 0.30); --line-soft: rgba(255, 255, 255, 0.10);
+    --paper: #f6ecff; --paper-dim: rgba(246, 236, 255, 0.68); --paper-mute: rgba(246, 236, 255, 0.38);
+    --brass: #ff2fd0; --brass-hi: #ff9bea; --brass-deep: #8f1070;
+    --gold: #ff2fd0; --red: #ff3b5c; --red-hi: #ff7d94; --teal: #00e5ff; --green: #00e5ff;
+    --screen-a: rgba(18, 12, 31, 0.94); --screen-b: rgba(4, 2, 9, 0.98);
+}
+
+body[data-theme="d"] {
+    --ink: #f6f5f2; --ink-1: #ffffff; --ink-2: #fbfaf7; --ink-3: #eceae4;
+    --line: rgba(24, 22, 18, 0.18); --line-soft: rgba(24, 22, 18, 0.09);
+    --paper: #16181d; --paper-dim: rgba(22, 24, 29, 0.68); --paper-mute: rgba(22, 24, 29, 0.45);
+    --brass: #8a6413; --brass-hi: #5d430c; --brass-deep: #c9ab63;
+    --gold: #a8761a; --red: #b8271d; --red-hi: #d8352a; --teal: #157a73; --green: #1c8a52;
+    --screen-a: rgba(255, 255, 255, 0.92); --screen-b: rgba(238, 236, 230, 0.98);
+}
+body[data-theme="d"] body,
+body[data-theme="d"] { background: var(--ink); }
+
+body[data-theme="d"] .modal-screen::before { background: linear-gradient(90deg, transparent, rgba(24, 22, 18, 0.14), transparent); }
+body[data-theme="d"] .char-card,
+body[data-theme="d"] .set-group,
+body[data-theme="d"] .detail-panel,
+body[data-theme="d"] .profile-card,
+body[data-theme="d"] .move-list,
+body[data-theme="d"] .res-stats,
+body[data-theme="d"] .stat-cell,
+body[data-theme="d"] .pause-panel,
+body[data-theme="d"] .satire-box,
+body[data-theme="d"] .vault-card,
+body[data-theme="d"] .bazaar-card,
+body[data-theme="d"] .mission-row { background: #ffffff; }
+body[data-theme="d"] .menu-item:hover,
+body[data-theme="d"] .menu-item.is-focus { background: linear-gradient(90deg, rgba(138, 100, 19, 0.10), transparent 70%); }
+body[data-theme="d"] .btn-gold,
+body[data-theme="d"] .stage-btn.active { background: linear-gradient(180deg, #f3c969, #c79133); --btn-fg: #1a1204; color: #1a1204; }
+body[data-theme="d"] .brand-mark b,
+body[data-theme="d"] .pick-plate.p1 .nm { color: var(--gold); }
+body[data-theme="d"] .controls-hint,
+body[data-theme="d"] .bottom-ui .controls-hint { background: rgba(255, 255, 255, 0.9); }
+
+/* theme switcher ---------------------------------------------------------- */
+
+.theme-switch { display: flex; align-items: center; gap: 2px; margin-top: 16px; }
+.theme-switch .ts-label {
+    margin-right: 10px;
+    font: 600 9px/1 var(--font-display);
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--paper-mute);
+}
+.ts-btn {
+    width: 30px; height: 26px;
+    border: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--paper-mute);
+    font: 700 10px/1 var(--font-display);
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: color 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+}
+.ts-btn + .ts-btn { border-left: 0; }
+.ts-btn:hover { color: var(--paper); border-color: var(--line); }
+.ts-btn.is-on { background: var(--brass); border-color: var(--brass); color: #150e02; }
+
+/* coin chip --------------------------------------------------------------- */
+
+.coin-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 42px;
+    padding: 0 13px;
+    border: 1px solid var(--line);
+    background: rgba(216, 178, 106, 0.08);
+}
+.coin-chip i { font-style: normal; color: var(--brass); font-size: 13px; }
+.coin-chip b {
+    font: 700 13px/1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+}
+
+/* training dojo ----------------------------------------------------------- */
+
+.training-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 16px;
+    align-content: start;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+.train-roster {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+    padding: 14px;
+}
+.train-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid var(--line-soft);
+    background: transparent;
+    cursor: pointer;
+    transition: border-color 0.14s ease;
+}
+.train-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.train-card span {
+    font: 700 9px/1.2 var(--font-display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    text-align: center;
+}
+.train-card:hover { border-color: var(--line); }
+.train-card.is-on { border-color: var(--gold); }
+.train-card.is-on span { color: var(--gold); }
+
+/* vault ------------------------------------------------------------------- */
+
+.vault-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 14px;
+    align-content: start;
+    overflow: auto;
+}
+.vault-card,
+.bazaar-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(16, 24, 29, 0.96), rgba(8, 12, 15, 0.96));
+}
+.vc-swatch { height: 72px; border: 1px solid var(--line-soft); }
+.vc-name { font: 800 15px/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; }
+.vc-desc { font: 500 10.5px/1.5 var(--font-body); color: var(--paper-mute); }
+.vc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; }
+.vc-price { font: 700 13px/1 var(--font-num); color: var(--brass); }
+.vc-lock { font: 600 9px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-mute); }
+.vault-card.is-equipped { border-color: var(--gold); }
+.vault-empty {
+    grid-column: 1 / -1;
+    padding: 28px;
+    border: 1px dashed var(--line);
+    font: 500 12px/1.7 var(--font-body);
+    color: var(--paper-mute);
+}
+
+/* missions ---------------------------------------------------------------- */
+
+.mission-list { display: flex; flex-direction: column; gap: 10px; align-content: start; overflow: auto; }
+.mission-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 200px auto;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    background: rgba(12, 18, 22, 0.82);
+}
+.mission-row .m-name { font: 700 13px/1.2 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; }
+.mission-row .m-sub { margin-top: 5px; font: 500 10.5px/1.4 var(--font-body); color: var(--paper-mute); }
+.mission-prog { height: 5px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.mission-prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--brass), var(--brass-hi)); }
+.mission-count { margin-top: 6px; font: 700 9.5px/1 var(--font-num); color: var(--paper-mute); letter-spacing: 0.06em; }
+.mission-row.is-done { border-color: rgba(255, 194, 51, 0.45); }
+.mission-row.is-claimed { opacity: 0.5; }
+
+@media (max-width: 900px) {
+    .training-grid { grid-template-columns: 1fr; }
+    .mission-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .mission-prog-wrap { display: none; }
+}
+
+
+/* results coin row + menu coin chip ------------------------------- */
+.res-stats .v.gold { color: var(--brass); }
+.menu-foot .coin-chip { height: 28px; padding: 0 9px; }
+.menu-foot .coin-chip b { font-size: 11px; }
 
 /* ===== real fightkaro.com face portraits in the roster grid ===== */
 .char-avatar { overflow: hidden; position: relative; padding: 0; }

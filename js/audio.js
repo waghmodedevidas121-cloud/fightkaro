@@ -121,7 +121,11 @@ const VOICE_PACK = {
     TARIFFTAAU: { voice: 'trump',  bed: 'bed_tariff',    release: 'release_tariff',    extras: ['kaching', 'coins', 'crate_crash'] },
     DOZERDADA:  { voice: 'yogi',   bed: 'bed_bulldozer', release: 'release_bulldozer', extras: ['horn_long', 'engine_loop'] },
     TOLLMAN:    { voice: 'nitin',  bed: 'bed_bulldozer', release: 'release_bulldozer', extras: ['metal_crunch', 'snap'] },
-    MBAPU:      { voice: 'mbapu',  bed: 'bed_chakra',    release: 'release_chakra',    extras: ['stamp_slam', 'bell'] }
+    MBAPU:      { voice: 'mbapu',  bed: 'bed_chakra',    release: 'release_chakra',    extras: ['stamp_slam', 'bell'] },
+    CHANAKYA:   { voice: 'amit',   bed: 'bed_chakra',    release: 'release_chakra',    extras: ['bell', 'pen_scribble'] },
+    CHARAKING:  { voice: 'lalu',   bed: 'bed_jadu',      release: 'release_jadu',      extras: ['kaching', 'coins'] },
+    PRIMEANCHOR:{ voice: 'ravi',   bed: 'bed_tariff',    release: 'release_tariff',    extras: ['news_sting', 'camera_clicks'] },
+    FACTCHECKER:{ voice: 'dhruv',  bed: 'bed_chakra',    release: 'release_chakra',    extras: ['eye_zing', 'pen_scribble'] }
 };
 
 class AudioBank {
