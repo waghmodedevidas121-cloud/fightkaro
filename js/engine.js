@@ -6,12 +6,13 @@ class SansadShowdownEngine {
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.toneMapping = THREE.NoToneMapping;
-        this.renderer.outputEncoding = THREE.LinearEncoding;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.15;
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
 
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x160f1c);
-        this.scene.fog = new THREE.FogExp2(0x160f1c, 0.035);
+        this.scene.background = new THREE.Color(0x0b0e14);
+        this.scene.fog = new THREE.FogExp2(0x0b0e14, 0.028);
 
         this.camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
         this.camPos = new THREE.Vector3(0, 2.3, 8.6);
@@ -25,6 +26,7 @@ class SansadShowdownEngine {
         this.p2Choice = 'YATRABOY';
         this.pickingFor = 'P1';
         this.stageChoice = 'SANSAD';
+        this.trainingMode = false;
 
         this.round = 1;
         this.p1Wins = 0;
@@ -54,27 +56,34 @@ class SansadShowdownEngine {
     }
 
     setupLights() {
-        this.scene.add(new THREE.HemisphereLight(0x8fb8ff, 0x33131a, 0.22));
-        this.scene.add(new THREE.AmbientLight(0xfff0e0, 0.34));
+        // Three-Point Arena Lighting + Warm Forged Bronze Key & Cool Rim
+        this.scene.add(new THREE.HemisphereLight(0x93c5fd, 0x261510, 0.42));
+        this.scene.add(new THREE.AmbientLight(0xfff4e6, 0.28));
 
-        const sun = new THREE.DirectionalLight(0xfff4e2, 1.0);
-        sun.position.set(6, 13, 7);
-        sun.castShadow = true;
-        sun.shadow.mapSize.set(2048, 2048);
-        sun.shadow.bias = -0.0008;
-        sun.shadow.normalBias = 0.02;
-        const sc = sun.shadow.camera;
+        const keyLight = new THREE.DirectionalLight(0xfff0d4, 1.35);
+        keyLight.position.set(6, 13, 7);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(2048, 2048);
+        keyLight.shadow.bias = -0.0006;
+        keyLight.shadow.normalBias = 0.02;
+        const sc = keyLight.shadow.camera;
         sc.left = -12; sc.right = 12; sc.top = 10; sc.bottom = -7; sc.near = 1; sc.far = 42;
         sc.updateProjectionMatrix();
-        this.scene.add(sun);
+        this.scene.add(keyLight);
 
-        const rim = new THREE.PointLight(0x5aa0ff, 0.5, 24, 2);
-        rim.position.set(-2, 6, -6);
-        this.scene.add(rim);
+        // Cool Cyan/Steel Back-Rim Light for crisp character silhouettes
+        const rimLeft = new THREE.PointLight(0x4dabf7, 1.15, 26, 1.8);
+        rimLeft.position.set(-4.5, 5.5, -5.5);
+        this.scene.add(rimLeft);
 
-        const goldLight = new THREE.PointLight(0xffb347, 0.45, 13, 2);
-        goldLight.position.set(0, 3.4, -3.2);
-        this.scene.add(goldLight);
+        const rimRight = new THREE.PointLight(0xf0c975, 1.1, 26, 1.8);
+        rimRight.position.set(4.5, 5.5, -5.5);
+        this.scene.add(rimRight);
+
+        // Center Golden Kursi Pedestal Spotlight
+        const kursiGlow = new THREE.PointLight(0xd4a853, 0.9, 14, 2);
+        kursiGlow.position.set(0, 3.6, -3.5);
+        this.scene.add(kursiGlow);
     }
 
     buildStage(stageType) {
@@ -82,102 +91,136 @@ class SansadShowdownEngine {
             this.stageGroup.remove(this.stageGroup.children[0]);
         }
 
-        const floorColor = stageType === 'SANSAD' ? 0x5c1919 : (stageType === 'JANTAR' ? 0x3b3228 : 0x22252a);
-        const bgColor = stageType === 'SANSAD' ? 0x1a0d12 : (stageType === 'JANTAR' ? 0x121d24 : 0x10131c);
+        const floorColor = stageType === 'SANSAD' ? 0x4a1414 : (stageType === 'JANTAR' ? 0x2b241d : 0x1a1e26);
+        const bgColor = stageType === 'SANSAD' ? 0x12090d : (stageType === 'JANTAR' ? 0x0c141a : 0x090c12);
         this.scene.background.setHex(bgColor);
         this.scene.fog.color.setHex(bgColor);
 
         const floor = new THREE.Mesh(
-            new THREE.PlaneGeometry(45, 30),
-            new THREE.MeshStandardMaterial({ color: floorColor, roughness: 0.4 })
+            new THREE.PlaneGeometry(48, 32),
+            new THREE.MeshStandardMaterial({ color: floorColor, roughness: 0.42, metalness: 0.12 })
         );
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         this.stageGroup.add(floor);
 
-        // THE GOLDEN KURSI IN THE CENTER BACKGROUND
+        // Arena Brass Trim Line along combat lane
+        const laneLine = new THREE.Mesh(
+            new THREE.PlaneGeometry(18, 0.08),
+            new THREE.MeshBasicMaterial({ color: 0xd4a853, transparent: true, opacity: 0.35 })
+        );
+        laneLine.rotation.x = -Math.PI / 2;
+        laneLine.position.set(0, 0.008, 0.85);
+        this.stageGroup.add(laneLine);
+
+        // THE GOLDEN KURSI IN THE CENTER BACKGROUND + PEDESTAL
         const kursi = new THREE.Group();
-        const goldMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 0.32, roughness: 0.35, emissive: 0x3a2600 });
-        const seat = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.2, 1.2), goldMat);
-        seat.position.y = 1.0;
-        const back = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.8, 0.2), goldMat);
-        back.position.set(0, 1.9, -0.5);
-        kursi.add(seat, back);
+        const goldMat = new THREE.MeshStandardMaterial({
+            color: 0xf0c975, metalness: 0.82, roughness: 0.22, emissive: 0x4a3208, emissiveIntensity: 0.45
+        });
+        const dais = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.5, 1.8, 0.35, 24),
+            new THREE.MeshStandardMaterial({ color: 0x1e222d, metalness: 0.4, roughness: 0.5 })
+        );
+        dais.position.y = 0.175;
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.22, 1.2), goldMat);
+        seat.position.y = 1.15;
+        const back = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.85, 0.22), goldMat);
+        back.position.set(0, 2.05, -0.5);
+        const halo = new THREE.Mesh(
+            new THREE.RingGeometry(1.4, 1.55, 36),
+            new THREE.MeshBasicMaterial({ color: 0xf0c975, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
+        );
+        halo.position.set(0, 2.1, -0.65);
+        kursi.add(dais, seat, back, halo);
         kursi.position.set(0, 0, -4.2);
         this.stageGroup.add(kursi);
 
-        // Sansad Sandstone Pillars
+        // Architectural Sandstone / Steel Pillars with Brass Caps
         const pillarMat = new THREE.MeshStandardMaterial({
-            color: stageType === 'SANSAD' ? 0xc87d55 : 0x667788,
-            roughness: 0.6
+            color: stageType === 'SANSAD' ? 0xb56e48 : (stageType === 'JANTAR' ? 0x526070 : 0x334155),
+            roughness: 0.55, metalness: 0.15
         });
+        const capMat = new THREE.MeshStandardMaterial({ color: 0xd4a853, metalness: 0.78, roughness: 0.28 });
         for (let i = -4; i <= 4; i++) {
             if (i === 0) continue;
-            const p = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 8, 16), pillarMat);
-            p.position.set(i * 3.2, 4, -5.8);
-            this.stageGroup.add(p);
+            const p = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.52, 8.2, 20), pillarMat);
+            p.position.set(i * 3.2, 4.1, -5.8);
+            p.castShadow = true;
+            p.receiveShadow = true;
+            const baseCap = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.68, 0.4, 20), capMat);
+            baseCap.position.set(i * 3.2, 0.2, -5.8);
+            this.stageGroup.add(p, baseCap);
         }
     }
 
     initUI() {
-        document.getElementById('accept-disclaimer').addEventListener('click', () => {
-            sfx.init();
-            sfx.playDholBeat(180, 0.25);
-            sfx.setTrack('background', 0.16);
-            document.getElementById('disclaimer-screen').style.display = 'none';
-            document.getElementById('select-screen').style.display = 'flex';
-        });
+        const acc = document.getElementById('accept-disclaimer');
+        if (acc) {
+            acc.addEventListener('click', () => {
+                sfx.init();
+                sfx.playDholBeat(180, 0.25);
+                sfx.setTrack('background', 0.16);
+                document.getElementById('disclaimer-screen').style.display = 'none';
+                document.getElementById('select-screen').style.display = 'flex';
+            });
+        }
 
         const grid = document.getElementById('roster-grid');
-        Object.values(ROSTER).forEach((c) => {
-            const card = document.createElement('div');
-            card.className = 'char-card';
-            card.id = `card-${c.id}`;
-            card.innerHTML = `
-                <div class="char-avatar" style="background:${'#' + c.color.toString(16).padStart(6, '0')}"><img src="faces/${CHAR_FACE[c.id] || 'modi'}.webp" alt="${c.name}"></div>
-                <div class="char-name">${c.name}</div>
-                <div class="char-team">${c.team}</div>
-                <div class="char-super">SUPER: ${c.superName}</div>
+        if (grid) {
+            Object.values(ROSTER).forEach((c) => {
+                const card = document.createElement('div');
+                card.className = 'char-card';
+                card.id = `card-${c.id}`;
+                card.innerHTML = `
+                    <div class="char-avatar" style="background:${'#' + c.color.toString(16).padStart(6, '0')}"><img src="faces/${CHAR_FACE[c.id] || 'modi'}.webp" alt="${c.name}"></div>
+                    <div class="char-name">${c.name}</div>
+                    <div class="char-team">${c.team}</div>
+                    <div class="char-super">SUPER: ${c.superName}</div>
+                `;
+                card.addEventListener('click', () => {
+                    if (this.pickingFor === 'P1') {
+                        this.p1Choice = c.id;
+                        this.pickingFor = 'P2';
+                    } else {
+                        this.p2Choice = c.id;
+                        this.pickingFor = 'P1';
+                    }
+                    sfx.playDholBeat(220, 0.12);
+                    sfx.speak(c.name, 1.0, 1.1);
+                    this.refreshRosterCards();
+                });
+                grid.appendChild(card);
+            });
+
+            const randCard = document.createElement('div');
+            randCard.className = 'char-card';
+            randCard.id = 'random-card';
+            randCard.innerHTML = `
+                <div class="char-avatar" style="background:#3b4252">🎲</div>
+                <div class="char-name">RANDOM NETA</div>
+                <div class="char-team">Surprise Pick</div>
+                <div class="char-super">ANY SUPER</div>
             `;
-            card.addEventListener('click', () => {
-                if (this.pickingFor === 'P1') {
-                    this.p1Choice = c.id;
-                    this.pickingFor = 'P2';
-                } else {
-                    this.p2Choice = c.id;
-                    this.pickingFor = 'P1';
-                }
-                sfx.playDholBeat(220, 0.12);
-                sfx.speak(c.name, 1.0, 1.1);
+            randCard.addEventListener('click', () => {
+                const keys = Object.keys(ROSTER);
+                this.p1Choice = keys[Math.floor(Math.random() * keys.length)];
+                this.p2Choice = keys[Math.floor(Math.random() * keys.length)];
+                sfx.playDholBeat(260, 0.15);
                 this.refreshRosterCards();
             });
-            grid.appendChild(card);
-        });
-
-        // Random Card
-        const randCard = document.createElement('div');
-        randCard.className = 'char-card';
-        randCard.innerHTML = `
-            <div class="char-avatar" style="background:#555">🎲</div>
-            <div class="char-name">RANDOM NETA</div>
-            <div class="char-team">Surprise Pick</div>
-            <div class="char-super">ANY SUPER</div>
-        `;
-        randCard.addEventListener('click', () => {
-            const keys = Object.keys(ROSTER);
-            this.p1Choice = keys[Math.floor(Math.random() * keys.length)];
-            this.p2Choice = keys[Math.floor(Math.random() * keys.length)];
-            sfx.playDholBeat(260, 0.15);
-            this.refreshRosterCards();
-        });
-        grid.appendChild(randCard);
+            grid.appendChild(randCard);
+        }
 
         this.refreshRosterCards();
 
-        document.getElementById('toggle-pick-side').addEventListener('click', (e) => {
-            this.pickingFor = this.pickingFor === 'P1' ? 'P2' : 'P1';
-            e.target.innerText = `PICKING: ${this.pickingFor}`;
-        });
+        const toggleSide = document.getElementById('toggle-pick-side');
+        if (toggleSide) {
+            toggleSide.addEventListener('click', (e) => {
+                this.pickingFor = this.pickingFor === 'P1' ? 'P2' : 'P1';
+                e.target.innerText = `PICKING: ${this.pickingFor}`;
+            });
+        }
 
         document.querySelectorAll('.stage-btn[data-stage]').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -188,10 +231,13 @@ class SansadShowdownEngine {
             });
         });
 
-        document.getElementById('start-fight-btn').addEventListener('click', () => {
-            document.getElementById('select-screen').style.display = 'none';
-            this.startFullMatch();
-        });
+        const startBtn = document.getElementById('start-fight-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                document.getElementById('select-screen').style.display = 'none';
+                this.startFullMatch();
+            });
+        }
 
         window.addEventListener('resize', () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -233,9 +279,16 @@ class SansadShowdownEngine {
         if (btn) btn.innerText = `PICKING: ${this.pickingFor}`;
     }
 
-    startFullMatch() {
-        this.p1.applyCharacter(ROSTER[this.p1Choice]);
-        this.p2.applyCharacter(ROSTER[this.p2Choice]);
+    startFullMatch(opts) {
+        opts = opts || {};
+        this.trainingMode = !!opts.training;
+        this.p1.applyCharacter(ROSTER[this.p1Choice] || ROSTER.MITRAMAN);
+        this.p2.applyCharacter(ROSTER[this.p2Choice] || ROSTER.YATRABOY);
+
+        if (window.FKUI && typeof window.FKUI.applyEquippedLoadout === 'function') {
+            window.FKUI.applyEquippedLoadout(this);
+        }
+
         this.round = 1;
         this.p1Wins = 0;
         this.p2Wins = 0;
@@ -243,7 +296,7 @@ class SansadShowdownEngine {
         document.getElementById('p1-name').innerText = this.p1.data.name;
         document.getElementById('p1-team').innerText = this.p1.data.team;
         document.getElementById('p2-name').innerText = this.p2.data.name;
-        document.getElementById('p2-team').innerText = this.p2.data.team;
+        document.getElementById('p2-team').innerText = this.trainingMode ? 'TRAINING DUMMY' : this.p2.data.team;
 
         const faceOf = (id) => 'faces/' + ((typeof CHAR_FACE !== 'undefined' && CHAR_FACE[id]) || 'modi') + '.webp';
         const f1 = document.getElementById('p1-face');
@@ -255,8 +308,10 @@ class SansadShowdownEngine {
         document.getElementById('p2-r1').classList.remove('won');
         document.getElementById('p2-r2').classList.remove('won');
 
-        // Show Shanti Route Box if fighting Boss MBAPU
-        document.getElementById('shanti-box').style.display = this.p2.data.id === 'MBAPU' ? 'block' : 'none';
+        document.getElementById('shanti-box').style.display = (!this.trainingMode && this.p2.data.id === 'MBAPU') ? 'block' : 'none';
+        const trBar = document.getElementById('training-toolbar');
+        if (trBar) trBar.style.display = this.trainingMode ? 'flex' : 'none';
+
         document.getElementById('hud').classList.add('on');
         sfx.setTrack('battle', 0.2);
 
@@ -268,20 +323,26 @@ class SansadShowdownEngine {
         this.activeSuper = null;
         this.p1.hp = this.p1.maxHp;
         this.p2.hp = this.p2.maxHp;
+        if (this.trainingMode) {
+            this.p1.shakti = 100;
+            this.p2.shakti = 0;
+        }
         this.p1.root.position.set(-2.4, 0, 0);
         this.p2.root.position.set(2.4, 0, 0);
         this.p1.state = 'IDLE';
         this.p2.state = 'IDLE';
-        this.timer = 60;
+        this.timer = this.trainingMode ? 99 : 60;
         this.shantiTimer = 0;
         this.shantiBlocks = 0;
         this.p1HasAttackedThisRound = false;
 
         this.updateHUD();
-        // round audio: three non-overlapping slots
-        //   0.00 s  "ROUND n"
-        //   0.85 s  fighter intro line
-        //   1.95 s  "FIGHT!" + gong, match goes live
+        if (this.trainingMode) {
+            this.announce('TRAINING DOJO');
+            this.matchActive = true;
+            return;
+        }
+
         this.announce(`ROUND ${this.round}`);
         sfx.roundCall(this.round);
         setTimeout(() => {
@@ -297,23 +358,25 @@ class SansadShowdownEngine {
 
     showCallout(isP1, text) {
         const el = document.getElementById(isP1 ? 'p1-callout' : 'p2-callout');
+        if (!el) return;
         el.innerText = text;
+        el.classList.add('on');
         el.style.opacity = '1';
-        el.style.transform = 'skewX(-12deg) scale(1.12)';
-        setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'skewX(-12deg) scale(0.9)'; }, 900);
+        setTimeout(() => { el.classList.remove('on'); el.style.opacity = '0'; }, 900);
     }
 
     announce(text) {
         const el = document.getElementById('center-announcer');
         const rl = document.getElementById('round-label');
         if (rl && /^ROUND\s/i.test(text)) rl.innerText = text;
+        if (!el) return;
         el.innerText = text;
+        el.classList.add('on');
         el.style.opacity = '1';
-        el.style.transform = 'translate(-50%, -50%) scale(1.1)';
         setTimeout(() => {
+            el.classList.remove('on');
             el.style.opacity = '0';
-            el.style.transform = 'translate(-50%, -50%) scale(0.8)';
-        }, 1000);
+        }, 1050);
     }
 
     handleCombatInput(code) {
@@ -324,7 +387,6 @@ class SansadShowdownEngine {
                                (p.facing === -1 && (this.keys['KeyA'] || this.keys['ArrowLeft']));
         const holdingDown = this.keys['KeyS'] || this.keys['ArrowDown'];
 
-        // Jump (W / ArrowUp / E / Numpad8 / Space when shakti < 100)
         const isJump = (code === 'KeyW' || code === 'ArrowUp' || code === 'KeyE' || code === 'Numpad8' || (code === 'Space' && p.shakti < 100));
         if (isJump && p.grounded && (p.state === 'IDLE' || p.state === 'MOVE')) {
             p.vel.y = 11.2;
@@ -332,7 +394,6 @@ class SansadShowdownEngine {
             try { sfx.whiff(); } catch (e) {}
         }
 
-        // SUPER (L / Space / V / U / O / Numpad0 / Enter when Shakti == 100)
         const isSuper = (code === 'KeyL' || code === 'Space' || code === 'KeyV' || code === 'KeyU' || code === 'KeyO' || code === 'Numpad0' || code === 'Enter');
         if (isSuper && p.shakti >= 100 && (p.state === 'IDLE' || p.state === 'MOVE' || p.state === 'CROUCH')) {
             this.p1HasAttackedThisRound = true;
@@ -340,7 +401,6 @@ class SansadShowdownEngine {
             return;
         }
 
-        // Unblockable Grab (I / C / G / Numpad3)
         if ((code === 'KeyI' || code === 'KeyC' || code === 'KeyG' || code === 'Numpad3') && (p.state === 'IDLE' || p.state === 'MOVE')) {
             this.p1HasAttackedThisRound = true;
             p.triggerMove('GRAB');
@@ -348,7 +408,6 @@ class SansadShowdownEngine {
             return;
         }
 
-        // PUNCH & FORWARD SPECIAL PUNCH (J / Z / F / Numpad1 / Numpad4)
         if (code === 'KeyJ' || code === 'KeyZ' || code === 'KeyF' || code === 'Numpad1' || code === 'Numpad4') {
             this.p1HasAttackedThisRound = true;
             if (p.state === 'IDLE' || p.state === 'MOVE' || p.state === 'CROUCH') {
@@ -365,7 +424,6 @@ class SansadShowdownEngine {
             }
         }
 
-        // KICK, SWEEP (↓ + K) & FORWARD SPECIAL KICK (K / X / H / Numpad2 / Numpad5)
         if (code === 'KeyK' || code === 'KeyX' || code === 'KeyH' || code === 'Numpad2' || code === 'Numpad5') {
             this.p1HasAttackedThisRound = true;
             if (p.state === 'IDLE' || p.state === 'MOVE' || p.state === 'CROUCH') {
@@ -388,12 +446,12 @@ class SansadShowdownEngine {
 
     /**
      * ========================================================================
-     * CINEMATIC 3D SUPER ABILITY SEQUENCER (Mitra Chakra, Aloo Se Sona, etc.)
+     * CINEMATIC 3D SUPER ABILITY SEQUENCER (ALL 11 FIGHTERS + EQUIPPED PROP)
      * ========================================================================
      */
     launchSuper(attacker, defender) {
         if (window.FKUI) window.FKUI.onSuper(attacker);
-        attacker.shakti = 0;
+        attacker.shakti = this.trainingMode && attacker.isP1 ? 100 : 0;
         attacker.state = 'SUPER_ACTIVE';
         defender.state = 'HITSTUN';
         defender.stunDuration = 3.0;
@@ -401,17 +459,21 @@ class SansadShowdownEngine {
 
         attacker.superPhase = 'charge';
         this.hitStop = 0;
-        // frame 0 of the activation: shout + charge riser, nothing else
         sfx.superCue(attacker.data.id);
         this.camZoom = 0.72;
         this.camKick = 0.85;
         this.announce(attacker.data.superName + '!');
         this.showCallout(attacker.isP1, '⚡ ' + attacker.data.superName);
 
+        const propOverride = (attacker.isP1 && window.FKUI && window.FKUI.getEquippedProp)
+            ? window.FKUI.getEquippedProp()
+            : 'DEFAULT';
+
         this.activeSuper = {
             attacker,
             defender,
             id: attacker.data.id,
+            propOverride,
             timer: 0,
             duration: 2.35,
             hitApplied: false
@@ -428,37 +490,35 @@ class SansadShowdownEngine {
         const phase = p < 0.55 ? 'charge' : 'strike';
         if (s.phase !== phase) {
             s.phase = phase;
-            // the release swoosh fires on the exact frame the strike phase starts
             if (phase === 'strike') sfx.superStrikeCue(s.attacker.data.id);
         }
         s.attacker.superPhase = phase;
-        const auraColor = s.attacker.data.color || 0xffcc00;
-        this.props.auraOn(atkPos.clone().add(new THREE.Vector3(0, 1.1, 0)), auraColor, phase === 'charge' ? (0.65 + Math.sin(p * 24) * 0.3) : 1.25);
+        const auraColor = s.attacker.data.color || 0xf0c975;
+        this.props.auraOn(atkPos.clone().add(new THREE.Vector3(0, 1.1, 0)), auraColor, phase === 'charge' ? (0.65 + Math.sin(p * 24) * 0.3) : 1.3);
         this.props.trail(atkPos.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.7, 0.5 + Math.random() * 1.3, 0)), auraColor);
 
-        // 1. MITRAMAN: Levitates high into sky, grows spinning Mitra Chakra above hand, hurls it at opponent
-        if (s.id === 'MITRAMAN') {
+        const mode = s.propOverride !== 'DEFAULT' ? s.propOverride : s.id;
+
+        if (mode === 'MITRAMAN' || mode === 'CHANAKYA' || mode === 'CHAKRA') {
             this.props.chakra.visible = true;
             this.props.chakra.rotation.z += 25 * dt;
             if (p < 0.55) {
-                s.attacker.root.position.y = THREE.MathUtils.lerp(0, 2.6, p / 0.55);
+                s.attacker.root.position.y = THREE.MathUtils.lerp(0, 2.5, p / 0.55);
                 this.props.chakra.position.set(atkPos.x, s.attacker.root.position.y + 2.2, 0);
-                this.props.chakra.scale.setScalar(0.2 + (p / 0.55) * 1.6);
+                this.props.chakra.scale.setScalar(0.25 + (p / 0.55) * 1.6);
             } else {
                 const t = (p - 0.55) / 0.45;
                 this.props.chakra.position.lerpVectors(
-                    new THREE.Vector3(atkPos.x, 4.5, 0),
+                    new THREE.Vector3(atkPos.x, 4.4, 0),
                     new THREE.Vector3(defPos.x, 1.2, 0),
                     t
                 );
-                s.attacker.root.position.y = THREE.MathUtils.lerp(2.6, 0, t);
+                s.attacker.root.position.y = THREE.MathUtils.lerp(2.5, 0, t);
             }
-        }
-        // 2. YATRA BOY: Zaps opponent into a Potato, feeds into 3D Aloo Machine, pops out Gold Bar!
-        else if (s.id === 'YATRABOY') {
+        } else if (mode === 'YATRABOY' || mode === 'ALOO') {
             this.props.alooMachine.visible = true;
             this.props.alooMachine.position.set(defPos.x, 1.1, 0);
-            this.props.alooMachine.rotation.y += 2 * dt;
+            this.props.alooMachine.rotation.y += 2.2 * dt;
             if (p < 0.45) {
                 s.defender.root.visible = false;
                 this.props.potatoMesh.visible = true;
@@ -469,9 +529,7 @@ class SansadShowdownEngine {
                 this.props.goldBarMesh.position.set(defPos.x + (p - 0.45) * 2.5, 1.2, 0);
                 this.props.goldBarMesh.rotation.z += 8 * dt;
             }
-        }
-        // 3. DEEDEE: JADU HOBE! Bubbling cauldron appears and turns opponent into a hopping green Frog!
-        else if (s.id === 'DEEDEE') {
+        } else if (mode === 'DEEDEE' || mode === 'LALUJI' || mode === 'DHRUV' || mode === 'CAULDRON') {
             this.props.cauldron.visible = true;
             this.props.cauldron.position.set((atkPos.x + defPos.x) * 0.5, 0.4, 0);
             if (p > 0.35) {
@@ -479,16 +537,12 @@ class SansadShowdownEngine {
                 this.props.frogMesh.visible = true;
                 this.props.frogMesh.position.set(defPos.x, Math.abs(Math.sin(p * 18)) * 1.1, 0);
             }
-        }
-        // 4. TARIFF TAAU: TARIFF TSUNAMI! Giant Golden Executive Stamp slams from the sky!
-        else if (s.id === 'TARIFFTAAU') {
+        } else if (mode === 'TARIFFTAAU' || mode === 'RAVISH' || mode === 'STAMP') {
             this.props.tariffStamp.visible = true;
             const dropY = p < 0.5 ? THREE.MathUtils.lerp(7.0, 0.6, p / 0.5) : 0.6;
             this.props.tariffStamp.position.set(defPos.x, dropY, 0);
-            if (p >= 0.5) s.defender.root.scale.y = 0.25; // Squashed flat!
-        }
-        // 5. DOZER DADA / TOLL MAN / MBAPU: Bulldozer / High-Impact Ram!
-        else {
+            if (p >= 0.5) s.defender.root.scale.y = 0.25;
+        } else {
             this.props.bulldozer.visible = true;
             const startX = atkPos.x - s.attacker.facing * 2.5;
             this.props.bulldozer.position.set(THREE.MathUtils.lerp(startX, defPos.x, p), 0, 0);
@@ -496,19 +550,19 @@ class SansadShowdownEngine {
             if (Math.random() < 0.3) sfx.playHorn();
         }
 
-        // Apply exact 30% (or 40% for Mbapu) Super Damage at climax
         if (p >= 0.75 && !s.hitApplied) {
             s.hitApplied = true;
             const superPct = s.attacker.data.superDmg / 100;
             const dmg = s.defender.maxHp * superPct;
-            s.defender.hp = Math.max(0, s.defender.hp - dmg);
-            this.shake = 0.9;
+            s.defender.hp = Math.max(this.trainingMode ? 10 : 0, s.defender.hp - dmg);
+            if (window.FKUI) window.FKUI.onHit(s.attacker, dmg);
+            this.shake = 0.95;
             sfx.superImpact();
-            this.props.impact(defPos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0xffcc00, true, s.attacker.facing);
-            this.props.burst(defPos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0xffcc00, 35);
+            this.props.impact(defPos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0xf0c975, true, s.attacker.facing, dmg, true);
+            this.props.burst(defPos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0xf0c975, 38);
             this.hitStop = 0.09;
-            this.camKick = 1.7;
-            this.camZoom = 0.78;
+            this.camKick = 1.75;
+            this.camZoom = 0.76;
             this.updateHUD();
         }
 
@@ -521,7 +575,7 @@ class SansadShowdownEngine {
             s.attacker.root.position.y = 0;
             s.attacker.state = 'IDLE';
 
-            if (s.defender.hp <= 0) {
+            if (s.defender.hp <= 0 && !this.trainingMode) {
                 s.defender.state = 'KO';
                 this.endRound(s.attacker.isP1 ? 'P1' : 'P2');
             } else {
@@ -536,7 +590,6 @@ class SansadShowdownEngine {
         const p1 = this.p1;
         const p2 = this.p2;
 
-        // P1 Continuous Movement & Hold-Back-to-Block
         p1.crouching = Boolean(this.keys['KeyS'] || this.keys['ArrowDown'] || this.keys['Numpad2']);
         let moveDir = 0;
         if (this.keys['KeyA'] || this.keys['ArrowLeft'] || this.keys['Numpad4']) moveDir -= 1;
@@ -558,12 +611,18 @@ class SansadShowdownEngine {
             }
         }
 
-        // MBAPU SHANTI ROUTE CHECK (Stay close 20s, Block 5 hits, Do NOT attack)
+        if (this.trainingMode) {
+            p2.vel.x = 0;
+            if (p2.hp < p2.maxHp && p2.state === 'IDLE') {
+                p2.hp = Math.min(p2.maxHp, p2.hp + 35 * dt);
+                this.updateHUD();
+            }
+            return;
+        }
+
         if (p2.data.id === 'MBAPU' && !this.p1HasAttackedThisRound) {
             const dist = Math.abs(p1.root.position.x - p2.root.position.x);
-            if (dist < 3.4) {
-                this.shantiTimer += dt;
-            }
+            if (dist < 3.4) this.shantiTimer += dt;
             const progress = Math.min(100, ((this.shantiTimer / 20) * 50) + (Math.min(5, this.shantiBlocks) / 5) * 50);
             document.getElementById('shanti-fill').style.width = `${progress}%`;
             document.getElementById('shanti-blocks').innerText = `${Math.min(5, this.shantiBlocks)}/5`;
@@ -576,7 +635,6 @@ class SansadShowdownEngine {
             }
         }
 
-        // CPU AI Logic
         const dist = Math.abs(p2.root.position.x - p1.root.position.x);
         if (p2.shakti >= 100 && (p2.state === 'IDLE' || p2.state === 'MOVE') && dist < 3.5 && Math.random() < dt * 2.5) {
             this.launchSuper(p2, p1);
@@ -592,7 +650,6 @@ class SansadShowdownEngine {
                 p2.vel.x = 0;
                 p2.state = 'IDLE';
                 if (Math.random() < dt * 4.2) {
-                    // If player turtles/blocks too much, CPU uses Grab!
                     if (p1.blocking && Math.random() < 0.45 && this.p2.data.id !== 'MBAPU') {
                         p2.triggerMove('GRAB');
                         this.showCallout(false, 'KURSI GRAB!');
@@ -623,12 +680,9 @@ class SansadShowdownEngine {
 
             atk.hasHit = true;
             const hitPos = def.root.position.clone().add(new THREE.Vector3(0, 1.2, 0));
-
-            // Check Block Rules (Standing blocks high/mid; Crouch blocks low; Grabs are unblockable)
             const canBlock = def.blocking && !m.unblockable && (m.low ? def.crouching : true);
 
             if (canBlock) {
-                // Official FightKaro Chip Damage (15%) & Blocked Shakti Gain (+2 Attacker, +3 Defender)
                 const chip = m.dmg * atk.data.dmgMult * 0.15;
                 def.hp = Math.max(1, def.hp - chip);
                 atk.addShakti(2);
@@ -644,17 +698,15 @@ class SansadShowdownEngine {
                 return;
             }
 
-            // Counter-hit check (1.2x damage if defender was in startup)
             const isCounter = def.state === 'ATTACK' && def.stateTimer < def.currentMove.startup;
             const scaleIdx = Math.min(atk.comboCount, COMBO_SCALING.length - 1);
             const scale = COMBO_SCALING[scaleIdx];
             const finalDmg = m.dmg * atk.data.dmgMult * (isCounter ? 1.2 : 1.0) * scale;
 
-            def.hp = Math.max(0, def.hp - finalDmg);
+            def.hp = Math.max(this.trainingMode ? 10 : 0, def.hp - finalDmg);
             if (window.FKUI) window.FKUI.onHit(atk, finalDmg);
             def.vel.x = atk.facing * m.push;
 
-            // Official FightKaro Shakti Formula: Attacker = dmg * 0.9 + 2, Defender = dmg * 0.6
             atk.addShakti(finalDmg * 0.9 + 2);
             def.addShakti(finalDmg * 0.6);
 
@@ -664,11 +716,11 @@ class SansadShowdownEngine {
             else if (atk.comboCount >= 2) this.showCallout(atk.isP1, `${atk.comboCount} HIT COMBO!`);
 
             sfx.playSlapOrPunch(Boolean(m.knockdown));
-            const hitColor = m.knockdown ? 0xff3300 : (isCounter ? 0xff66ff : 0xffcc00);
+            const hitColor = m.knockdown ? 0xd8352a : (isCounter ? 0xf0c975 : 0xd4a853);
             const pushDir = Math.sign(def.root.position.x - atk.root.position.x) || atk.facing;
             this.props.impact(
                 new THREE.Vector3(hitPos.x - pushDir * 0.16, (def.root.position.y || 0) + (m.low ? 0.62 : 1.16), 0),
-                hitColor, !!m.knockdown, pushDir
+                hitColor, !!m.knockdown, pushDir, finalDmg, isCounter
             );
             def.flash = 1;
             atk.flash = 0.32;
@@ -677,7 +729,7 @@ class SansadShowdownEngine {
             this.camKick = Math.min(1.7, this.camKick + (m.knockdown ? 1.2 : 0.55));
             this.camZoom = THREE.MathUtils.clamp(this.camZoom - (m.knockdown ? 0.085 : 0.045), 0.72, 1);
 
-            if (def.hp <= 0) {
+            if (def.hp <= 0 && !this.trainingMode) {
                 def.state = 'KO';
                 sfx.koSting();
                 this.endRound(atk.isP1 ? 'P1' : 'P2');
@@ -700,6 +752,7 @@ class SansadShowdownEngine {
     }
 
     endRound(winner) {
+        if (this.trainingMode) return;
         this.matchActive = false;
         sfx.stopSuperBed();
         sfx.crowd(0.75);
@@ -736,6 +789,11 @@ class SansadShowdownEngine {
         document.getElementById('p1-hp-dmg').style.width = p1Hp;
         document.getElementById('p2-hp').style.width = p2Hp;
         document.getElementById('p2-hp-dmg').style.width = p2Hp;
+
+        const hudP1 = document.getElementById('hud-p1');
+        const hudP2 = document.getElementById('hud-p2');
+        if (hudP1) hudP1.classList.toggle('low', (this.p1.hp / this.p1.maxHp) <= 0.25);
+        if (hudP2) hudP2.classList.toggle('low', (this.p2.hp / this.p2.maxHp) <= 0.25);
 
         const s1 = Math.floor(this.p1.shakti);
         const s2 = Math.floor(this.p2.shakti);
@@ -798,14 +856,16 @@ class SansadShowdownEngine {
         if (this.activeSuper) {
             this.updateActiveSuper(dt);
         } else if (this.matchActive) {
-            this.timer -= dt;
-            if (this.timer <= 0) {
-                this.timer = 0;
-                this.endRound(this.p1.hp >= this.p2.hp ? 'P1' : 'P2');
+            if (!this.trainingMode) {
+                this.timer -= dt;
+                if (this.timer <= 0) {
+                    this.timer = 0;
+                    this.endRound(this.p1.hp >= this.p2.hp ? 'P1' : 'P2');
+                }
             }
             const timerEl = document.getElementById('match-timer');
-            timerEl.innerText = Math.ceil(this.timer);
-            timerEl.classList.toggle('low', this.timer <= 10);
+            timerEl.innerText = this.trainingMode ? '∞' : Math.ceil(this.timer);
+            timerEl.classList.toggle('low', !this.trainingMode && this.timer <= 10);
             this.processPlayerAndAI(dt);
             this.checkHits();
         }
