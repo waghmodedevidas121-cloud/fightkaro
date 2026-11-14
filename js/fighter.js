@@ -1,4 +1,4 @@
-/* ===== NETA FIGHTER v3 : rounded capsule body + living animation ===== */
+/* ===== NETA FIGHTER v4 : Real GLB PBR Materials + Contact Shadow + Skin Customization ===== */
 class NetaFighter {
   constructor(scene, x, isP1, charData) {
     this.scene = scene;
@@ -9,6 +9,26 @@ class NetaFighter {
 
     this.body = new THREE.Group();
     this.root.add(this.body);
+
+    // Grounded Contact Shadow + Rim Ring under each fighter
+    this.shadowDisc = new THREE.Mesh(
+      new THREE.CircleGeometry(0.62, 28),
+      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.48, depthWrite: false })
+    );
+    this.shadowDisc.rotation.x = -Math.PI / 2;
+    this.shadowDisc.position.y = 0.012;
+    this.root.add(this.shadowDisc);
+
+    this.baseRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.56, 0.62, 36),
+      new THREE.MeshBasicMaterial({
+        color: isP1 ? 0xd4a853 : 0xd8352a,
+        transparent: true, opacity: 0.36, side: THREE.DoubleSide, depthWrite: false
+      })
+    );
+    this.baseRing.rotation.x = -Math.PI / 2;
+    this.baseRing.position.y = 0.015;
+    this.root.add(this.baseRing);
 
     this.vel = new THREE.Vector3();
     this.facing = isP1 ? 1 : -1;
@@ -25,6 +45,7 @@ class NetaFighter {
     this.ikTargets = { L: new THREE.Vector3(), R: new THREE.Vector3() };
     this.tilt = 0;
     this.hipLift = 0;
+    this.skinTintHex = null;
     this.applyCharacter(charData);
   }
 
@@ -47,17 +68,26 @@ class NetaFighter {
     this.flash = 0;
 
     this.detachGLB();
-    while (this.root.children.length > 0) this.root.remove(this.root.children[0]);
+    if (this.body) this.root.remove(this.body);
     this.body = new THREE.Group();
     this.root.add(this.body);
     this.bones = {};
     this.targetRot = {};
     this.buildRig();
-    // the primitive box figure is a skeleton for the IK only — it is never
-    // shown. Fighters are the real GLB models, or a beam marker if a model
-    // genuinely cannot be fetched.
     if (this.rigGroup) this.rigGroup.visible = false;
     this.loadRealModel();
+  }
+
+  setSkinTint(hex) {
+    this.skinTintHex = hex || null;
+    if (!this.glbMats) return;
+    for (const m of this.glbMats) {
+      if (this.skinTintHex) {
+        m.color.setHex(this.skinTintHex);
+      } else {
+        m.color.setHex(m.userData.baseColor != null ? m.userData.baseColor : 0xffffff);
+      }
+    }
   }
 
   buildRig() {
@@ -94,7 +124,6 @@ class NetaFighter {
       parent.add(m);
       return m;
     };
-    // smooth capsule: cylinder + hemispherical caps, hangs down from the bone origin
     const capsule = (parent, r, len, mat, taper) => {
       const rb = r * (taper || 1);
       const g = new THREE.Group();
@@ -120,17 +149,14 @@ class NetaFighter {
       return g;
     };
 
-    /* ---------------- pelvis ---------------- */
     this.rigGroup = new THREE.Group();
     this.body.add(this.rigGroup);
     const hips = bone('hips', this.rigGroup, 0, 0.94, 0);
     shell(hips, 0.185, 0.175, 0.2, outfitMat, 0.86);
     mesh(hips, new THREE.CylinderGeometry(0.196, 0.19, 0.075, 18), darkMat, 0, 0.1, 0).scale.z = 0.9;
 
-    /* ---------------- torso ---------------- */
     const torso = bone('torso', hips, 0, 0.1, 0);
     shell(torso, 0.235, 0.185, 0.44, outfitMat, 0.8);
-    // chest plate / party colour vest (front arc only)
     const vest = new THREE.Mesh(
       new THREE.CylinderGeometry(0.244, 0.206, 0.36, 18, 1, true, -0.95, 1.9),
       accentMat
@@ -140,17 +166,14 @@ class NetaFighter {
     vest.material.side = THREE.DoubleSide;
     vest.castShadow = true;
     torso.add(vest);
-    // collar + neck
     mesh(torso, new THREE.CylinderGeometry(0.135, 0.16, 0.1, 16), whiteMat, 0, 0.46, 0).scale.z = 0.85;
     mesh(torso, new THREE.CylinderGeometry(0.072, 0.082, 0.14, 12), skinMat, 0, 0.53, 0);
     if (d.RedTie) {
       mesh(torso, new THREE.BoxGeometry(0.075, 0.3, 0.05), new THREE.MeshStandardMaterial({ color: 0xd81b2a, roughness: 0.55 }), 0, 0.3, 0.175);
     }
-    // deltoids
     mesh(torso, new THREE.SphereGeometry(0.1, 14, 12), outfitMat, 0.2, 0.395, 0).scale.set(1.15, 1, 0.95);
     mesh(torso, new THREE.SphereGeometry(0.1, 14, 12), outfitMat, -0.2, 0.395, 0).scale.set(1.15, 1, 0.95);
 
-    /* ---------------- head ---------------- */
     const head = bone('head', torso, 0, 0.55, 0);
     const skull = mesh(head, new THREE.SphereGeometry(0.215, 20, 16), skinMat, 0, 0.17, 0);
     skull.scale.set(0.97, 1.06, 0.93);
@@ -190,7 +213,6 @@ class NetaFighter {
     }
     this.face = { eyeL, eyeR, browL, browR, mouth, pupL, pupR };
 
-    /* ---------------- arms ---------------- */
     ['L', 'R'].forEach((s) => {
       const dir = s === 'L' ? 1 : -1;
       const sh = bone('shoulder_' + s, torso, dir * 0.2, 0.395, 0);
@@ -198,15 +220,8 @@ class NetaFighter {
       const el = bone('elbow_' + s, sh, 0, -0.29, 0);
       capsule(el, 0.073, 0.26, skinMat, 0.86);
       mesh(el, new THREE.SphereGeometry(0.076, 12, 10), skinMat, 0, -0.28, 0);
-      if (d.id === 'DEEDEE' && s === 'R') {
-        mesh(el, new THREE.BoxGeometry(0.15, 0.32, 0.045), new THREE.MeshStandardMaterial({ color: 0x00b4ff, roughness: 0.6 }), 0, -0.36, 0.15);
-      }
-      if (d.staff && s === 'R') {
-        mesh(el, new THREE.CylinderGeometry(0.025, 0.03, 1.55, 8), new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.85 }), 0, -0.28, 0.14);
-      }
     });
 
-    /* ---------------- legs ---------------- */
     ['L', 'R'].forEach((s) => {
       const dir = s === 'L' ? 1 : -1;
       const hip = bone('hip_' + s, hips, dir * 0.135, -0.045, 0);
@@ -248,7 +263,6 @@ class NetaFighter {
       this.facing = opp.root.position.x >= this.root.position.x ? 1 : -1;
     }
 
-    // shortest-path yaw smoothing (frame-rate independent)
     const targetYaw = this.facing === 1 ? Math.PI * 0.5 : -Math.PI * 0.5;
     let dyaw = targetYaw - this.root.rotation.y;
     dyaw = ((dyaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
@@ -296,7 +310,6 @@ class NetaFighter {
       }
     }
 
-    // physics & gravity
     if (this.state !== 'SUPER_ACTIVE') {
       this.root.position.x += this.vel.x * dt;
       this.root.position.y += this.vel.y * dt;
@@ -310,7 +323,19 @@ class NetaFighter {
       }
     }
 
-    // arena clamp + pushbox
+    // Keep contact shadow anchored on floor y=0 even when jumping
+    if (this.shadowDisc) {
+      const h = Math.max(0, this.root.position.y);
+      this.shadowDisc.position.y = -h + 0.012;
+      const sc = Math.max(0.45, 1 - h * 0.22);
+      this.shadowDisc.scale.setScalar(sc);
+    }
+    if (this.baseRing) {
+      const h = Math.max(0, this.root.position.y);
+      this.baseRing.position.y = -h + 0.015;
+      this.baseRing.material.opacity = this.shakti >= 100 ? (0.55 + Math.sin(performance.now() * 0.01) * 0.25) : 0.3;
+    }
+
     this.root.position.x = THREE.MathUtils.clamp(this.root.position.x, -7.8, 7.8);
     const dist = Math.abs(this.root.position.x - opp.root.position.x);
     if (dist < 0.9 && Math.abs(this.root.position.y - opp.root.position.y) < 1.2) {
@@ -323,7 +348,6 @@ class NetaFighter {
     this.animateBones(dt, opp);
   }
 
-  /* ---------------- pose helpers ---------------- */
   setP(over) {
     const out = this.poseOut;
     for (const n of BONE_NAMES) {
@@ -343,7 +367,6 @@ class NetaFighter {
     return { bob: 1, sway: 1, freq: 1, lean: 0.06 };
   }
 
-  /* ---------------- animation core ---------------- */
   animateBones(dt, opp) {
     if (this.glbReady) { this.animateGLB(dt, opp); return; }
     const st = this.state;
@@ -354,10 +377,6 @@ class NetaFighter {
     const out = this.poseOut;
     let lookAtOpp = true;
     let hipY = this.hipsBaseY;
-
-    this.blinkT -= dt;
-    if (this.blinkT <= 0) { this.blink = 0.11; this.blinkT = 2.4 + Math.random() * 3.4; }
-    this.blink = Math.max(0, this.blink - dt);
 
     if (st === 'ATTACK' && this.moveClip) {
       sampleKeys(this.moveClip.keys, this.stateTimer, out);
@@ -376,113 +395,17 @@ class NetaFighter {
       poseLerp(out, recoil, poseBase(), k);
       rate = 20;
       lookAtOpp = false;
-    } else if (st === 'KNOCKDOWN' || st === 'KO') {
-      this.setP({
-        torso: [0.12, 0.05, 0], head: [0.1, 0.05, 0],
-        shoulder_L: [-0.35, 0.25, 0.85], elbow_L: [0.7, 0, 0],
-        shoulder_R: [-0.3, -0.25, -0.85], elbow_R: [0.75, 0, 0],
-        hip_L: [0.3, 0, 0.3], knee_L: [0.55, 0, 0],
-        hip_R: [0.16, 0, -0.3], knee_R: [0.7, 0, 0]
-      });
-      rate = 10;
-      lookAtOpp = false;
-    } else if (st === 'SUPER_ACTIVE') {
-      this.setP({
-        torso: [-0.18, 0.1, 0], head: [-0.14, 0.1, 0],
-        shoulder_R: [-2.75, -0.12, -0.22], elbow_R: [0.12, 0, 0],
-        shoulder_L: [-1.15, 0.2, 0.45], elbow_L: [1.1, 0, 0],
-        hip_L: [0.1, 0, 0.06], knee_L: [0.16, 0, 0]
-      });
-      rate = 9;
-      lookAtOpp = false;
-    } else if (this.blocking) {
-      const b = Math.sin(t * 3.4) * 0.014;
-      this.setP({
-        torso: [-0.04, 0.16 + b, 0], head: [-0.02, 0.06, 0],
-        shoulder_L: [-1.34, 0.46, 0.34], elbow_L: [2.0, 0, 0],
-        shoulder_R: [-1.28, -0.5, -0.34], elbow_R: [2.05, 0, 0],
-        hip_L: [0.16, 0, 0.03], knee_L: [0.3, 0, 0],
-        hip_R: [-0.14, 0, -0.03], knee_R: [0.28, 0, 0]
-      });
-      rate = 22;
-      lookAtOpp = false;
-    } else if (this.crouching || st === 'CROUCH') {
-      this.setP({
-        torso: [0.3, -0.2, 0], head: [0.06, 0.2, 0],
-        shoulder_L: [-0.8, 0.2, 0.3], elbow_L: [1.7, 0, 0],
-        shoulder_R: [-0.7, -0.2, -0.3], elbow_R: [1.8, 0, 0],
-        hip_L: [0.62, 0, 0.05], knee_L: [1.2, 0, 0],
-        hip_R: [0.5, 0, -0.05], knee_R: [1.15, 0, 0]
-      });
-      hipY = this.hipsBaseY - 0.3;
-      rate = 18;
-    } else if (st === 'MOVE' && this.grounded) {
-      const sp = Math.abs(this.vel.x);
-      const ph = this.phase * (3.6 + sp * 0.55);
-      const sw = Math.sin(ph);
-      const bob = Math.abs(Math.cos(ph)) * 0.045 * S.bob;
-      this.setP({
-        torso: [0.1 * S.lean + 0.06 + bob * 0.4, -0.22 + sw * 0.12, sw * 0.03],
-        head: [-0.05 - bob * 0.3, 0.24 - sw * 0.06, 0],
-        shoulder_L: [-1.05 - sw * 0.4, 0.18, 0.26], elbow_L: [1.9 + Math.abs(sw) * 0.2, 0, 0],
-        shoulder_R: [-0.95 + sw * 0.4, -0.18, -0.26], elbow_R: [1.85 + Math.abs(sw) * 0.2, 0, 0],
-        hip_L: [0.15, 0.04, 0.02], knee_L: [0.24, 0, 0],
-        hip_R: [-0.1, -0.04, -0.02], knee_R: [0.22, 0, 0]
-      });
-      hipY = this.hipsBaseY - 0.02 + Math.sin(ph * 2) * 0.02 * S.bob;
-      rate = 17;
-    } else if (!this.grounded) {
-      this.setP({
-        torso: [0.16, -0.2, 0], head: [-0.05, 0.2, 0],
-        shoulder_L: [-1.1, 0.2, 0.45], elbow_L: [1.2, 0, 0],
-        shoulder_R: [-1.0, -0.2, -0.45], elbow_R: [1.3, 0, 0],
-        hip_L: [0.75, 0, 0.06], knee_L: [1.0, 0, 0],
-        hip_R: [0.35, 0, -0.06], knee_R: [0.8, 0, 0]
-      });
-      rate = 12;
-      lookAtOpp = false;
     } else {
-      // ---------------- living idle : the "spirit" ----------------
       const br = Math.sin(t * 2.3) * 0.5 + 0.5;
       const sway = Math.sin(t * 0.85 * S.freq + this.phase) * S.sway;
-      const micro = Math.sin(t * 3.7 + this.phase * 2) * 0.5;
       this.setP({
         torso: [0.07 + S.lean + br * 0.025, -0.26 + sway * 0.07, sway * 0.035],
-        head: [-0.06 - br * 0.02, 0.26 - sway * 0.09, sway * 0.04 + micro * 0.015],
-        shoulder_L: [-1.14 + br * 0.05 + sway * 0.05, 0.16, 0.24 + sway * 0.02],
-        elbow_L: [2.0 - br * 0.06, 0, 0],
-        shoulder_R: [-1.04 - br * 0.05 - sway * 0.05, -0.16, -0.24 - sway * 0.02],
-        elbow_R: [1.95 + br * 0.06, 0, 0],
-        hip_L: [0.06, 0.04, 0.02], knee_L: [0.16, 0, 0],
-        hip_R: [-0.04, -0.04, -0.02], knee_R: [0.14, 0, 0]
+        head: [-0.06 - br * 0.02, 0.26 - sway * 0.09, sway * 0.04],
+        shoulder_L: [-1.14 + br * 0.05, 0.16, 0.24], elbow_L: [2.0 - br * 0.06, 0, 0],
+        shoulder_R: [-1.04 - br * 0.05, -0.16, -0.24], elbow_R: [1.95 + br * 0.06, 0, 0]
       });
-      hipY = this.hipsBaseY + Math.sin(t * 2.3) * 0.012 * S.bob - 0.012;
-      rate = 11;
     }
 
-    // ---------------- face / secondary life ----------------
-    if (this.face) {
-      const open = (st === 'ATTACK' || st === 'SUPER_ACTIVE' || st === 'HITSTUN') ? 1 : (0.18 + Math.sin(t * 1.7) * 0.12);
-      this.face.mouth.scale.set(1, open, 1);
-      const blinkK = this.blink > 0 ? 0.12 : 1;
-      this.face.eyeL.scale.y = blinkK;
-      this.face.eyeR.scale.y = blinkK;
-      const browUp = (st === 'ATTACK' || st === 'SUPER_ACTIVE') ? 0.02 : 0;
-      this.face.browL.position.y = 0.3 + browUp;
-      this.face.browR.position.y = 0.3 + browUp;
-    }
-
-    // head look toward opponent (soft neck aim)
-    if (lookAtOpp && opp) {
-      const dx = opp.root.position.x - this.root.position.x;
-      const yawToOpp = Math.atan2(-dx, 0) - 0;
-      const local = THREE.MathUtils.clamp(
-        ((yawToOpp - this.root.rotation.y + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI, -0.5, 0.5);
-      out.head[1] += local * 0.55;
-      out.torso[1] += local * 0.16;
-    }
-
-    // ---------------- write pose to bones ----------------
     for (const n of BONE_NAMES) {
       const e = this.targetRot[n];
       const v = out[n];
@@ -490,134 +413,36 @@ class NetaFighter {
       _eu.copy(e);
       _q1.setFromEuler(_eu);
       const b = this.bones[n];
-      b.quaternion.slerp(_q1, 1 - Math.exp(-rate * dt));
+      if (b) b.quaternion.slerp(_q1, 1 - Math.exp(-rate * dt));
     }
-
-    // hip height (crouch / bob)
-    this.bones.hips.position.y = dampf(this.bones.hips.position.y, hipY, 16, dt);
-
-    // knockdown tilt around the world Z axis so the body falls away from the rival
-    const targetTilt = (st === 'KNOCKDOWN' || st === 'KO') ? 1.45 : 0;
-    this.tilt = dampf(this.tilt, targetTilt, 8, dt);
-    _q1.setFromAxisAngle(new THREE.Vector3(0, 0, 1), this.tilt * this.facing);
-    _q2.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.root.rotation.y);
-    this.root.quaternion.copy(_q1).multiply(_q2);
-    this.body.position.y = this.tilt > 0.35 ? -0.55 * Math.min(1, (this.tilt - 0.35) / 0.6) : 0;
-
-    // ---------------- foot IK ----------------
-    const ikW = this.grounded && st !== 'KNOCKDOWN' && st !== 'KO' && st !== 'SUPER_ACTIVE' ? 1 : 0;
-    if (ikW > 0) {
-      const yaw = this.root.rotation.y;
-      const speed = Math.abs(this.vel.x);
-      const moving = (st === 'MOVE' || speed > 0.4);
-      if (moving) this.gait += dt * (2.6 + speed * 1.5);
-      const stride = Math.min(0.26, speed * 0.055);
-      const lift = 0.11;
-
-      const foot = (lx, lz, side) => {
-        const sw = Math.sin(this.gait + (side === 'L' ? 0 : Math.PI));
-        const up = Math.max(0, Math.cos(this.gait + (side === 'L' ? 0 : Math.PI))) * lift;
-        _v1.set(lx, 0, lz + (moving ? sw * stride : 0));
-        _v1.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-        _v1.add(this.root.position);
-        _v1.y = 0.078 + (moving ? up : 0);
-        return this.ikTargets[side].copy(_v1);
-      };
-
-      const kL = st === 'ATTACK' ? 0.3 : 1;
-      const kR = st === 'ATTACK' ? (this.currentMoveKey === 'SWEEP' || this.currentMoveKey.indexOf('KICK') === 0 ? 0.05 : 0.3) : 1;
-      const fL = foot(0.155, 0.03, 'L');
-      const fR = foot(-0.155, -0.03, 'R');
-      this.solveLeg('L', fL, kL, dt);
-      this.solveLeg('R', fR, kR, dt);
-    }
-
-    // ---------------- damage flash ----------------
-    const fl = this.flash;
-    this.mats.accent.emissiveIntensity = 0.28 + fl * 3.2;
-    this.mats.outfit.emissive.setRGB(fl * 0.6, fl * 0.06, fl * 0.06);
-    this.mats.outfit.emissiveIntensity = fl > 0 ? 1 : 0;
-  }
-
-  /* ---------------- two-bone analytic leg IK ---------------- */
-  solveLeg(side, target, weight, dt) {
-    if (weight <= 0.02) return;
-    const hip = this.bones['hip_' + side];
-    const knee = this.bones['knee_' + side];
-    const ankle = this.bones['ankle_' + side];
-    const L1 = 0.44, L2 = 0.42;
-
-    hip.getWorldPosition(_v1);
-    _v2.copy(target).sub(_v1);
-    const raw = _v2.length();
-    if (raw < 1e-4 || !isFinite(raw)) return;
-    const dist = THREE.MathUtils.clamp(raw, Math.abs(L1 - L2) + 0.04, L1 + L2 - 0.012);
-    _v2.multiplyScalar(1 / raw);
-
-    // pole : knee aims forward (character local +Z rotated by yaw)
-    _v3.set(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.root.rotation.y);
-    _v3.multiplyScalar(0.6);
-    _v3.y = -0.2;
-    _v3.addScaledVector(_v2, -_v3.dot(_v2));
-    if (_v3.lengthSq() < 1e-5) _v3.set(0, 0, 1); else _v3.normalize();
-
-    _v4.crossVectors(_v2, _v3).normalize();
-
-    const cosA = THREE.MathUtils.clamp((dist * dist + L1 * L1 - L2 * L2) / (2 * dist * L1), -1, 1);
-    const A = Math.acos(cosA);
-    _v5.copy(_v2).applyAxisAngle(_v4, A).normalize();
-
-    const w = THREE.MathUtils.clamp(weight * (1 - Math.exp(-26 * dt)), 0, 1);
-
-    hip.parent.getWorldQuaternion(_q1);
-    _q2.setFromUnitVectors(_down, _v5);
-    _q3.copy(_q1).invert().multiply(_q2);
-    hip.quaternion.slerp(_q3, w);
-
-    // knee
-    _v1.addScaledVector(_v5, L1);
-    _v2.copy(target).sub(_v1);
-    if (_v2.lengthSq() < 1e-6) return;
-    _v2.normalize();
-    hip.parent.getWorldQuaternion(_q1);
-    _q2.copy(_q1).multiply(hip.quaternion);
-    _q3.setFromUnitVectors(_down, _v2).premultiply(_q2.clone().invert());
-    knee.quaternion.slerp(_q3, w);
-
-    // ankle : keep the sole flat on the floor
-    _q2.multiply(knee.quaternion);
-    _q3.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.root.rotation.y)
-      .premultiply(_q2.clone().invert());
-    ankle.quaternion.slerp(_q3, w);
+    if (this.bones.hips) this.bones.hips.position.y = dampf(this.bones.hips.position.y, hipY, 16, dt);
   }
 
   /* ==========================================================================
-   *  REAL GLB CHARACTER (fightkaro.com models, Draco + WebP)
+   *  REAL GLB CHARACTER (sRGB Textures + PBR Roughness/Metalness Enhancement)
    * ======================================================================== */
 
   loadRealModel() {
     const name = CHAR_MODEL[this.data.id];
     if (!name) return;
+    if (this.rigGroup) this.rigGroup.visible = false;
     const token = (this.loadToken = (this.loadToken || 0) + 1);
-    // the box rig stays on screen while the GLB downloads: hiding it up front
-    // leaves an invisible fighter on a slow connection
     loadCharacterModel(name).then((gltf) => {
-      if (token !== this.loadToken) return;      // character changed mid-load
+      if (token !== this.loadToken) return;
       this.attachGLB(gltf, name);
     }).catch((err) => {
       if (token !== this.loadToken) return;
-      if (this.rigGroup) this.rigGroup.visible = false;   // never show the box rig
-      this.showGhost();                                   // readable placeholder instead
+      if (this.rigGroup) this.rigGroup.visible = false;
+      this.showGhost();
       console.warn('[fighter] ' + name + '.glb failed:', err && err.message);
     });
   }
 
-  /* a soft light column marks a fighter whose model could not be loaded */
   showGhost() {
     if (this.ghost) return;
     const geo = new THREE.CylinderGeometry(0.34, 0.5, 1.8, 18, 1, true);
     const mat = new THREE.MeshBasicMaterial({
-      color: this.isP1 ? 0xffc233 : 0xff6a5e,
+      color: this.isP1 ? 0xd4a853 : 0xd8352a,
       transparent: true,
       opacity: 0.29,
       side: THREE.DoubleSide,
@@ -657,7 +482,7 @@ class NetaFighter {
     const box = new THREE.Box3().setFromObject(source);
     const size = box.getSize(new THREE.Vector3());
     const height = size.y > 0.5 ? size.y : 1.78;
-    const scale = 1.78 / height;
+    const scale = 1.82 / height;
     source.scale.setScalar(scale);
     source.position.y = -box.min.y * scale;
     source.position.x = 0;
@@ -671,11 +496,21 @@ class NetaFighter {
       const mats = Array.isArray(o.material) ? o.material : [o.material];
       for (const m of mats) {
         if (!m) continue;
-        if (m.map) m.map.anisotropy = 4;
+        if (m.map) {
+          m.map.anisotropy = 8;
+          m.map.encoding = THREE.sRGBEncoding;
+          m.map.needsUpdate = true;
+        }
+        // PBR refinement: eliminate plastic sheen, boost rim reflection
+        if (m.roughness != null) m.roughness = THREE.MathUtils.clamp(m.roughness * 0.92, 0.38, 0.85);
+        if (m.metalness != null) m.metalness = Math.min(0.22, m.metalness);
+        m.envMapIntensity = 1.15;
         m.side = THREE.FrontSide;
         if (m.emissive === undefined) m.emissive = new THREE.Color(0, 0, 0);
+        m.userData.baseColor = m.color ? m.color.getHex() : 0xffffff;
         m.userData.baseEmissive = m.emissive.getHex();
         m.userData.baseEmissiveIntensity = m.emissiveIntensity;
+        if (this.skinTintHex) m.color.setHex(this.skinTintHex);
       }
     });
 
@@ -715,7 +550,6 @@ class NetaFighter {
     return null;
   }
 
-  /** crossfade to a clip. opts: fade, hold(loop), once, timeScale, time, restart */
   setClip(name, opts) {
     if (!this.glbReady || !name) return;
     const next = this.actions[name];
@@ -748,7 +582,6 @@ class NetaFighter {
     this.clipName = name;
   }
 
-  /** clip time that matches the engine's move timeline (authentic hit sync) */
   attackTime(clipName) {
     const t = CLIP_TIME[String(clipName).replace(/_m$/, '')] || [0.18, 0.5, 1.0];
     const start = t[0], hit = t[1], end = t[2];
@@ -809,15 +642,13 @@ class NetaFighter {
 
     if (this.mixer) this.mixer.update(dt);
 
-    // yaw + knockdown fall tilt (kept for the primitive look, zero on GLB)
     this.tilt = 0;
     this.root.quaternion.setFromAxisAngle(_v1.set(0, 1, 0), this.root.rotation.y);
 
-    // damage flash on the real materials
     const fl = this.flash;
     for (const m of this.glbMats || []) {
       if (fl > 0.01) {
-        m.emissive.setRGB(fl * 0.85, fl * 0.12, fl * 0.1);
+        m.emissive.setRGB(fl * 0.85, fl * 0.18, fl * 0.08);
         m.emissiveIntensity = 1;
       } else if (m.emissiveIntensity !== 0) {
         m.emissive.setHex(m.userData.baseEmissive || 0x000000);
@@ -825,5 +656,4 @@ class NetaFighter {
       }
     }
   }
-
 }
